@@ -39,7 +39,7 @@ impl Ctx {
     }
 
     #[wasm_bindgen(js_name = fromProjPipeline)]
-    pub fn from_proj_pipeline(&mut self, pipeline: &str) -> Result<Ctx, JsValue> {
+    pub fn from_proj_pipeline(&mut self, _pipeline: &str) -> Result<Ctx, JsValue> {
         // Requires a proj_string to geodesy_rs conversion lexer.
         todo!()
     }
@@ -70,7 +70,7 @@ impl Ctx {
     }
 
     #[wasm_bindgen]
-    pub fn inverse(self, operands: &mut Coord) -> Result<usize, JsValue> {
+    pub fn inverse(self, _operands: &mut Coord) -> Result<usize, JsValue> {
         todo!()
     }
 }
