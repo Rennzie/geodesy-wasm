@@ -11,14 +11,18 @@ crate-type = ["cdylib", "rlib"]
 default = ["console_error_panic_hook"]
 
 [dependencies]
-wasm-bindgen = "0.2.87"
+wasm-bindgen = "0.2.86"
 
-geodesy_rs ={ package="geodesy", version = "0.10.0", features = ["js"]}
+geodesy_rs = { package = "geodesy", git = "https://github.com/busstoptaktik/geodesy.git", rev = "2757e0c", version = "0.10.0", features = [
+  "js",
+] }
+
 # The `console_error_panic_hook` crate provides better debugging of panics by
 # logging them with `console.error`. This is great for development, but requires
 # all the `std::fmt` and `std::panicking` infrastructure, so isn't great for
 # code size when deploying.
 console_error_panic_hook = { version = "0.1.7", optional = true }
+js-sys = "0.3.64"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.37"
