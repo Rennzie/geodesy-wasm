@@ -1,18 +1,22 @@
-use geodesy_rs::prelude::AngularUnits;
+use crate::utils::log;
+use geodesy_rs::prelude::*;
 use wasm_bindgen::prelude::*;
 
-use crate::utils::log;
 mod context;
 mod coordinate;
 mod ntv2_grid;
+mod wasmcontext;
 
+// TODO: remove this - it's just for testing
 #[wasm_bindgen (js_name = readGrid)]
 pub fn read_grid(data_view: js_sys::DataView) -> crate::error::WasmResult<()> {
     let raw_grid = ntv2_grid::NTv2Grid::from_data_view(data_view)?;
-    let rg_grid = raw_grid.into_grid()?;
+    let grav_bin = raw_grid.into_gravsoft_bin()?;
+
+    let rg_grid = geodesy_rs::context_authoring::Grid::gravsoft(grav_bin.as_slice())?;
 
     let position = geodesy_rs::Coor4D::geo(51.505, -0.09, 0.0, 0.0);
-    let contains_point = rg_grid.contains(position)?;
+    let contains_point = rg_grid.contains(position);
     log(format!("contains_point: {contains_point}")
         .to_string()
         .as_str());

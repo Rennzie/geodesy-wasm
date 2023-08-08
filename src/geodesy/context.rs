@@ -1,6 +1,5 @@
-use crate::error::WasmResult;
-
 use super::coordinate::CoordBuffer;
+use crate::error::WasmResult;
 use geodesy_rs::prelude::*;
 use wasm_bindgen::prelude::*;
 
