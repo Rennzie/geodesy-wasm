@@ -1,5 +1,5 @@
 const geodesy = require("./pkg/node/index");
-geodesy.set_panic_hook();
+// geodesy.set_panic_hook();
 
 const CONTROL_POINTS = {
   // {x: lon, y: lat, z: height} as expected by proj convention
@@ -39,27 +39,28 @@ const expectedCoord3857 = [
   -12245.143987260091, 6728120.968144314, 30,
 ];
 
-// +proj=pipeline
-//   +step +inv +proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000
-//         +y_0=-100000 +ellps=airy
-//   +step +proj=push +v_3
-//   +step +proj=cart +ellps=airy
-//   +step +proj=helmert +x=446.448 +y=-125.157 +z=542.06 +rx=0.15 +ry=0.247
-//         +rz=0.842 +s=-20.489 +convention=position_vector
-//   +step +inv +proj=cart +ellps=WGS84
-//   +step +proj=pop +v_3
-//   +step +proj=webmerc +lat_0=0 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84
+// NOTE: geodesy uses k_0 while PROJ used k. Should be a PR to geodesy?
+const epsg7405toWebmercPipeline = `+proj=pipeline
+  +step +inv +proj=tmerc +lat_0=49 +lon_0=-2 +k_0=0.9996012717 +x_0=400000
+        +y_0=-100000 +ellps=airy
+  +step +proj=push +v_3
+  +step +proj=cart +ellps=airy
+  +step +proj=helmert +x=446.448 +y=-125.157 +z=542.06 +rx=0.15 +ry=0.247
+        +rz=0.842 +s=-20.489 +convention=position_vector
+  +step +inv +proj=cart +ellps=WGS84
+  +step +proj=pop +v_3
+  +step +proj=webmerc +lat_0=0 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84`;
 
-const epsg7405toWebmercPipeline = `
- | tmerc inv lat_0=49 lon_0=-2 k_0=0.9996012717 x_0=400000 y_0=-100000 ellps=airy
- | push v_3
- | cart ellps=airy
- | helmert x=446.448 y=-125.157 z=542.06 rx=0.15 ry=0.247
-       rz=0.842 s=-20.489 convention=position_vector
- | cart inv ellps=WGS84
- | pop v_3
- | webmerc lat_0=0 lon_0=0 x_0=0 y_0=0 ellps=WGS84
- `;
+// const epsg7405toWebmercPipeline = `
+//  | tmerc inv lat_0=49 lon_0=-2 k_0=0.9996012717 x_0=400000 y_0=-100000 ellps=airy
+//  | push v_3
+//  | cart ellps=airy
+//  | helmert x=446.448 y=-125.157 z=542.06 rx=0.15 ry=0.247
+//        rz=0.842 s=-20.489 convention=position_vector
+//  | cart inv ellps=WGS84
+//  | pop v_3
+//  | webmerc lat_0=0 lon_0=0 x_0=0 y_0=0 ellps=WGS84
+//  `;
 console.log("EPSG:7405 TO EPSG:3857 without Gridshift");
 console.log("--------------------------------------");
 console.time("Create Ctx");
@@ -76,6 +77,7 @@ console.timeEnd("Create CoordBuffer");
 console.time("forward");
 epsg7405toWebmercCtx.forward(flatCoord7405Ptr);
 console.timeEnd("forward");
+epsg7405toWebmercCtx.free();
 
 console.time("toArray");
 const jsArray7405toWebmerc = flatCoord7405Ptr.toArray();
@@ -99,21 +101,21 @@ for (let i = 0; i < jsArray7405toWebmerc.length; i += 3) {
 }
 
 // ------ Gridshift testing ------
-// +proj=pipeline
-//   +step +inv +proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000
-//         +y_0=-100000 +ellps=airy
-//   +step +proj=hgridshift +grids=uk_os_OSTN15_NTv2_OSGBtoETRS.tif
-//   +step +proj=webmerc +lat_0=0 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84
 
 console.log("\n");
 console.log("EPSG:7405 TO EPSG:3857 with Gridshift");
 console.log("--------------------------------------");
 
-const epsg745Grid = `
-   | tmerc inv lat_0=49 lon_0=-2 k_0=0.9996012717 x_0=400000 y_0=-100000 ellps=airy
-   | gridshift grids=uk_os_OSTN15_NTv2_OSGBtoETRS.gsb
-   | webmerc lat_0=0 lon_0=0 x_0=0 y_0=0 ellps=WGS84
-   `;
+// const epsg745Grid = `
+//    | tmerc inv lat_0=49 lon_0=-2 k_0=0.9996012717 x_0=400000 y_0=-100000 ellps=airy
+//    | gridshift inv grids=OSTN15_NTv2_OSGBtoETRS.gsb
+//    | webmerc inv lat_0=0 lon_0=0 x_0=0 y_0=0 ellps=WGS84
+//    `;
+
+const epsg745Grid = `+proj=pipeline
+  +step +inv +proj=tmerc +lat_0=49 +lon_0=-2 +k_0=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy
+  +step +proj=gridshift +grids=OSTN15_NTv2_OSGBtoETRS.gsb
+  +step +proj=webmerc +lat_0=0 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84`;
 
 const fs = require("fs");
 
@@ -126,7 +128,7 @@ geodesy.readGrid(dataView);
 console.time("Create Ctx with GSB");
 const epsg7405toGridCtx = new geodesy.Ctx(
   epsg745Grid,
-  "uk_os_OSTN15_NTv2_OSGBtoETRS.gsb",
+  "OSTN15_NTv2_OSGBtoETRS.gsb",
   dataView
 );
 console.timeEnd("Create Ctx with GSB");

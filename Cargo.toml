@@ -24,6 +24,7 @@ geodesy_rs = { package = "geodesy", git = "https://github.com/busstoptaktik/geod
 console_error_panic_hook = { version = "0.1.7", optional = true }
 js-sys = "0.3.64"
 thiserror = "1.0.44"
+console_log = "1.0.0"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.37"

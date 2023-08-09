@@ -32,7 +32,7 @@ const NTV2_SUBGRID_GSCOUNT: usize = 168; // (i32) grid node count
 const NTV2_NODE_LAT_CORRN: usize = 0; // (f32) correction to the latitude at this node point (secs)
 const NTV2_NODE_LON_CORRN: usize = 4; // (f32) correction to the longitude at this node point (secs)
 
-/// Read a NTv2 grid from a `js_sys::DataView`.
+/// Read a NTv2 grid from a `js_sys::DataView` into Gravsoft binary native to Rust Geodesy.
 pub fn parse_ntv2_to_gravsoft_bin(view: &DataView) -> Result<Vec<u8>> {
     let is_le = view.get_int32_endian(8, true) == 11;
 
@@ -53,8 +53,12 @@ pub fn parse_ntv2_to_gravsoft_bin(view: &DataView) -> Result<Vec<u8>> {
     into_gravsoft_bin(header, grid)
 }
 
-// The gravsoft reader in geodesy_rs expects a text buffer from a list of f64 rows
 /// Converts the `NTv2Grid` into binary gravsoft compatible with Rust Geodesy
+/// The gravsoft reader in geodesy_rs expects a text buffer made up of rows with f64 values delimited by spaces.
+/// Rows are ordered North to South and East to West.
+/// The first row contains the header values which should be in degrees
+/// The subsequent rows contain the grid values which should be in seconds or arc.
+/// See [geodesy_rs::grid::gravsoft_grid_reader](https://github.com/Rennzie/geodesy/blob/49384de0c70135fceac6f00ca367d171a1a8fe2e/src/grid/mod.rs#L208)
 fn into_gravsoft_bin(header: Vec<f64>, grid: Vec<Vec<f64>>) -> Result<Vec<u8>> {
     let gravsoft_header = header
         .iter()
@@ -112,20 +116,22 @@ fn read_ntv2_subgrid(
     header.push(dlat);
     header.push(dlon);
 
-    let mut grid = Vec::<Vec<f64>>::with_capacity(rows); // An interleaved vector of node values ordered [[lat₀, lon₀...latₙ, lonₙ]r0, [lat₀, lon₀...latₙ, lonₙ]rn]
+    // An interleaved vector of node values ordered [[lat₀, lon₀...latₙ, lonₙ]ᵣ₀, [lat₀, lon₀...latₙ, lonₙ]ᵣₙ]
+    let mut grid = Vec::<Vec<f64>>::with_capacity(rows);
 
     // Gravsoft grids are North West in the top left corner,
-    // opposite to NTv2 which starts in the South £ast corner.
+    // opposite to NTv2 which starts in the South East corner.
     for r in (0..rows).rev() {
         let mut row = Vec::<f64>::with_capacity(cols * 2);
-        for c in (0..cols).rev() {
-            let offset = grid_start_offset + (c * r) * NTV2_NODE_SIZE;
+        for c in 0..cols {
+            let offset = grid_start_offset + c * r * NTV2_NODE_SIZE;
             let lat_correction = view.get_float64_endian(offset + NTV2_NODE_LAT_CORRN, is_le);
             // // And again we flip the longitude sign so East is positive and West is negative.
             let lon_correction = view.get_float64_endian(offset + NTV2_NODE_LON_CORRN, is_le);
 
             let lat_sec = (lat_0 + (c as f64) * dlat) * DEG_TO_SEC;
-            let lon_sec = (lon_0 + (r as f64) * dlon) * DEG_TO_SEC;
+            // change sign because we're south to north?
+            let lon_sec = (lon_0 + (r as f64) * -dlon) * DEG_TO_SEC;
 
             // TODO: What is the value expected by gravsoft, just the correction or is it the node lat/lon + the correction?
             // For horizontal datum shifts, the grid values are in minutes-of-arc

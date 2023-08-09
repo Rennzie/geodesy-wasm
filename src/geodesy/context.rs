@@ -1,6 +1,7 @@
 use super::coordinate::CoordBuffer;
 use super::wasmcontext::WasmContext;
 use crate::error::WasmResult;
+use crate::utils::log;
 use geodesy_rs::prelude::*;
 use wasm_bindgen::prelude::*;
 
@@ -24,17 +25,18 @@ impl Ctx {
             context.set_blob(grid_key, data_view)
         }
 
-        let op_handle = context.op(definition);
+        let mut geodesy_def = definition.to_owned();
+        if definition.contains("+proj=") {
+            geodesy_def = parse_proj(definition);
+        }
+
+        // TODO: Remove: Only for debugging
+        log(&format!("geodesy_def: {:?}", geodesy_def));
+        let op_handle = context.op(geodesy_def.as_str());
         match op_handle {
             Ok(op_handle) => Ok(Self { context, op_handle }),
             Err(e) => Err(JsError::new(&format!("{}", e))),
         }
-    }
-
-    #[wasm_bindgen(js_name = fromProjPipeline)]
-    pub fn from_proj_pipeline(&mut self, _pipeline: &str) -> WasmResult<Ctx> {
-        // Requires a proj_string to geodesy_rs conversion lexer.
-        todo!()
     }
 
     /// A forward transformation of the coordinates in the buffer.
