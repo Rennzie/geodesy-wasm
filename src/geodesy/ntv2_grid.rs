@@ -10,6 +10,8 @@ use crate::error::{Error, Result};
 use js_sys::DataView;
 
 const SEC_TO_DEG: f64 = 0.0002777778;
+const DEG_TO_SEC: f64 = 3600.0;
+const SEC_TO_MIN: f64 = 0.0166667;
 
 // Both overview and sub grid headers have 11 fields of 16 bytes each.
 const NTV2_HEADER_SIZE: usize = 11 * 16;
@@ -31,7 +33,7 @@ const NTV2_NODE_LAT_CORRN: usize = 0; // (f32) correction to the latitude at thi
 const NTV2_NODE_LON_CORRN: usize = 4; // (f32) correction to the longitude at this node point (secs)
 
 /// Read a NTv2 grid from a `js_sys::DataView`.
-pub fn parse_ntv2_to_gravsoft_bin(view: DataView) -> Result<Vec<u8>> {
+pub fn parse_ntv2_to_gravsoft_bin(view: &DataView) -> Result<Vec<u8>> {
     let is_le = view.get_int32_endian(8, true) == 11;
 
     // TODO: read the header magic (string) and compare it to NTV2_MAGIC
@@ -53,22 +55,31 @@ pub fn parse_ntv2_to_gravsoft_bin(view: DataView) -> Result<Vec<u8>> {
 
 // The gravsoft reader in geodesy_rs expects a text buffer from a list of f64 rows
 /// Converts the `NTv2Grid` into binary gravsoft compatible with Rust Geodesy
-fn into_gravsoft_bin(header: Vec<f64>, grid: Vec<f64>) -> Result<Vec<u8>> {
+fn into_gravsoft_bin(header: Vec<f64>, grid: Vec<Vec<f64>>) -> Result<Vec<u8>> {
     let gravsoft_header = header
         .iter()
-        .map(|value| format!("{}\n", value))
+        .map(|value| format!("{} ", value))
         .collect::<String>();
 
     let grav_soft_grid = grid
         .iter()
-        .map(|value| format!("{}\n", value))
+        .map(|value| {
+            format!(
+                "{}\n",
+                value.iter().map(|v| format!("{} ", v)).collect::<String>()
+            )
+        })
         .collect::<String>();
 
-    let gravsoft = gravsoft_header + &grav_soft_grid;
+    let gravsoft = gravsoft_header + "\n" + &grav_soft_grid;
     Ok(gravsoft.into_bytes())
 }
 
-fn read_ntv2_subgrid(view: DataView, offset: usize, is_le: bool) -> Result<(Vec<f64>, Vec<f64>)> {
+fn read_ntv2_subgrid(
+    view: &DataView,
+    offset: usize,
+    is_le: bool,
+) -> Result<(Vec<f64>, Vec<Vec<f64>>)> {
     let lat_0 = view.get_float64_endian(offset + NTV2_SUBGRID_NLAT, is_le) * SEC_TO_DEG; // Latitude of the first (typically northernmost) row of the grid
     let lat_1 = view.get_float64_endian(offset + NTV2_SUBGRID_SLAT, is_le) * SEC_TO_DEG; // Latitude of the last (typically southernmost) row of the grid
 
@@ -101,21 +112,28 @@ fn read_ntv2_subgrid(view: DataView, offset: usize, is_le: bool) -> Result<(Vec<
     header.push(dlat);
     header.push(dlon);
 
-    let mut grid = Vec::<f64>::new(); // An interleaved vector of node values ordered [lat₀, lon₀...latₙ, lonₙ]
+    let mut grid = Vec::<Vec<f64>>::with_capacity(rows); // An interleaved vector of node values ordered [[lat₀, lon₀...latₙ, lonₙ]r0, [lat₀, lon₀...latₙ, lonₙ]rn]
 
     // Gravsoft grids are North West in the top left corner,
     // opposite to NTv2 which starts in the South £ast corner.
     for r in (0..rows).rev() {
+        let mut row = Vec::<f64>::with_capacity(cols * 2);
         for c in (0..cols).rev() {
             let offset = grid_start_offset + (c * r) * NTV2_NODE_SIZE;
             let lat_correction = view.get_float64_endian(offset + NTV2_NODE_LAT_CORRN, is_le);
-            // And again we flip the longitude sign so East is positive and West is negative.
-            let lon_correction = -view.get_float64_endian(offset + NTV2_NODE_LON_CORRN, is_le);
+            // // And again we flip the longitude sign so East is positive and West is negative.
+            let lon_correction = view.get_float64_endian(offset + NTV2_NODE_LON_CORRN, is_le);
+
+            let lat_sec = (lat_0 + (c as f64) * dlat) * DEG_TO_SEC;
+            let lon_sec = (lon_0 + (r as f64) * dlon) * DEG_TO_SEC;
 
             // TODO: What is the value expected by gravsoft, just the correction or is it the node lat/lon + the correction?
-            grid.push(lat_correction * SEC_TO_DEG);
-            grid.push(lon_correction * SEC_TO_DEG);
+            // For horizontal datum shifts, the grid values are in minutes-of-arc
+            // and in latitude/longitude order - From Geodesy gravsoft parser.
+            row.push((lat_sec + lat_correction) * SEC_TO_MIN);
+            row.push((lon_sec + lon_correction) * SEC_TO_MIN);
         }
+        grid.push(row);
     }
 
     Ok((header, grid))

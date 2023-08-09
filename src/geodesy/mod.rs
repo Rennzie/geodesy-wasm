@@ -10,9 +10,7 @@ mod wasmcontext;
 // TODO: remove this - it's just for testing
 #[wasm_bindgen (js_name = readGrid)]
 pub fn read_grid(data_view: js_sys::DataView) -> crate::error::WasmResult<()> {
-    let raw_grid = ntv2_grid::NTv2Grid::from_data_view(data_view)?;
-    let grav_bin = raw_grid.into_gravsoft_bin()?;
-
+    let grav_bin = ntv2_grid::parse_ntv2_to_gravsoft_bin(&data_view)?;
     let rg_grid = geodesy_rs::context_authoring::Grid::gravsoft(grav_bin.as_slice())?;
 
     let position = geodesy_rs::Coor4D::geo(51.505, -0.09, 0.0, 0.0);

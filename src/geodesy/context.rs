@@ -1,19 +1,28 @@
 use super::coordinate::CoordBuffer;
+use super::wasmcontext::WasmContext;
 use crate::error::WasmResult;
 use geodesy_rs::prelude::*;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 pub struct Ctx {
-    context: Minimal,
+    context: WasmContext,
     op_handle: OpHandle,
 }
 
 #[wasm_bindgen]
 impl Ctx {
     #[wasm_bindgen(constructor)]
-    pub fn new(definition: &str) -> WasmResult<Ctx> {
-        let mut context = Minimal::new();
+    pub fn new(
+        definition: &str,
+        grid_key: &str,
+        data_view: Option<js_sys::DataView>,
+    ) -> WasmResult<Ctx> {
+        let mut context = WasmContext::new();
+
+        if let Some(data_view) = data_view {
+            context.set_blob(grid_key, data_view)
+        }
 
         let op_handle = context.op(definition);
         match op_handle {
