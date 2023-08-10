@@ -1,5 +1,6 @@
 const geodesy = require("./pkg/node/index");
-// geodesy.set_panic_hook();
+geodesy.set_panic_hook();
+geodesy.init_console_logger();
 
 const CONTROL_POINTS = {
   // {x: lon, y: lat, z: height} as expected by proj convention
@@ -123,7 +124,6 @@ const gridShiftFile = fs.readFileSync(
   "/Users/sean/Documents/Project-test-data/gridshifts/OSTN15_NTv2_OSGBtoETRS.gsb"
 );
 const dataView = new DataView(gridShiftFile.buffer);
-geodesy.readGrid(dataView);
 
 console.time("Create Ctx with GSB");
 const epsg7405toGridCtx = new geodesy.Ctx(
@@ -138,9 +138,8 @@ const flatCoord7405Ptrv2 = new geodesy.CoordBuffer(
   geodesy.CoordDimension.Three
 );
 
-epsg7405toGridCtx.forward(flatCoord7405Ptrv2);
 console.time("forward");
-epsg7405toWebmercCtx.forward(flatCoord7405Ptrv2);
+epsg7405toGridCtx.forward(flatCoord7405Ptrv2);
 console.timeEnd("forward");
 
 console.time("toArray");

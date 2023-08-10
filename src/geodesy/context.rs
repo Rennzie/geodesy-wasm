@@ -1,7 +1,6 @@
 use super::coordinate::CoordBuffer;
 use super::wasmcontext::WasmContext;
 use crate::error::WasmResult;
-use crate::utils::log;
 use geodesy_rs::prelude::*;
 use log::debug;
 use wasm_bindgen::prelude::*;
@@ -14,6 +13,7 @@ pub struct Ctx {
 
 #[wasm_bindgen]
 impl Ctx {
+    // TODO: Rework how the Ctx is initialized. Should check for grids and make sure there is a resource
     #[wasm_bindgen(constructor)]
     pub fn new(
         definition: &str,
@@ -23,7 +23,7 @@ impl Ctx {
         let mut context = WasmContext::new();
 
         if let Some(data_view) = data_view {
-            context.set_blob(grid_key, data_view)
+            context.set_blob(grid_key, data_view)?;
         }
 
         let mut geodesy_def = definition.to_owned();
