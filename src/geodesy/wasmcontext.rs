@@ -8,6 +8,7 @@ use std::collections::BTreeMap;
 // ----- T H E   W A S M  C T X   P R O V I D E R ---------------------------------
 // Modified from Rust Geodesy Minimal context to work with web inputs.
 // Changes:
+//      - Add blobs via `set_blob` instead of `get_blob` fetching directly from the file system
 
 #[derive(Debug, Default)]
 pub struct WasmContext {
@@ -18,14 +19,15 @@ pub struct WasmContext {
     /// Instantiations of operators
     operators: BTreeMap<OpHandle, Op>,
     /// DataViews for external resources like grids
-    data_views: BTreeMap<String, js_sys::DataView>,
+    data_views: BTreeMap<String, Vec<u8>>,
 }
 
-const BAD_ID_MESSAGE: RgError = RgError::General("Minimal: Unknown operator id");
+const BAD_ID_MESSAGE: RgError = RgError::General("WasmContext: Unknown operator id");
 
 impl WasmContext {
-    pub fn set_blob(&mut self, key: &str, data_view: js_sys::DataView) {
-        self.data_views.insert(key.to_string(), data_view);
+    pub fn set_blob(&mut self, _key: &str, _data_view: js_sys::DataView) {
+        // TODO: Parse dataviews to Vec<u8>
+        todo!()
     }
 }
 
@@ -114,17 +116,12 @@ impl Context for WasmContext {
     }
 
     fn get_blob(&self, name: &str) -> Result<Vec<u8>, RgError> {
-        // We can't use the file system in wasm
-        // Instead we keep DataViews in the context and parse them to Vec<u8> here when needed
+        // We can't use the file system in wasm so we must pre-parse data to `Vec<u8>` in `set_blob`
+        // ready to be consumed here.
 
         // TODO: Should probably consume the resource otherwise we double the memory usage
         if let Some(resource) = self.data_views.get(name) {
-            let parse_grid = parse_ntv2_to_gravsoft_bin(resource);
-
-            return match parse_grid {
-                Ok(grid) => Ok(grid),
-                Err(_) => Err(RgError::General("Failed to parse Grid from DataView.")),
-            };
+            return Ok(resource.to_owned());
         }
 
         Err(RgError::NotFound(
