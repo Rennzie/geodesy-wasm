@@ -1,3 +1,7 @@
+/**
+ * FOR DEBUGGING PURPOSES ONLY.
+ * - Will be removed in favour of actual tests once the library is stable.
+ */
 const geodesy = require("./pkg/node/index");
 geodesy.set_panic_hook();
 geodesy.init_console_logger();
