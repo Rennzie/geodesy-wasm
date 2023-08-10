@@ -123,24 +123,24 @@ fn read_ntv2_subgrid(
     // opposite to NTv2 which starts in the South East corner.
     for r in (0..rows).rev() {
         let mut row = Vec::<f64>::with_capacity(cols * 2);
-        for c in 0..cols {
+        for c in (0..cols).rev() {
             let offset = grid_start_offset + c * r * NTV2_NODE_SIZE;
             let lat_correction = view.get_float64_endian(offset + NTV2_NODE_LAT_CORRN, is_le);
-            // // And again we flip the longitude sign so East is positive and West is negative.
+            // And again we flip the longitude sign so East is positive and West is negative.
             let lon_correction = view.get_float64_endian(offset + NTV2_NODE_LON_CORRN, is_le);
-
-            let lat_sec = (lat_0 + (c as f64) * dlat) * DEG_TO_SEC;
-            // change sign because we're south to north?
-            let lon_sec = (lon_0 + (r as f64) * -dlon) * DEG_TO_SEC;
 
             // TODO: What is the value expected by gravsoft, just the correction or is it the node lat/lon + the correction?
             // For horizontal datum shifts, the grid values are in minutes-of-arc
             // and in latitude/longitude order - From Geodesy gravsoft parser.
-            row.push((lat_sec + lat_correction) * SEC_TO_MIN);
-            row.push((lon_sec + lon_correction) * SEC_TO_MIN);
+            row.push((lat_correction + dlat * DEG_TO_SEC) * SEC_TO_MIN);
+            row.push(lon_correction * SEC_TO_MIN);
         }
         grid.push(row);
     }
+
+    use log::info;
+    info!("header: {:?}", header);
+    // info!("grid: {:?}", grid[0]);
 
     Ok((header, grid))
 }
