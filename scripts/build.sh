@@ -39,13 +39,13 @@ wasm-pack build \
 # Compile JS Wrapper
 
 # Compile geodesy.ts for bundler
-sed 's/@geodesy-wasm/\.\/geodesy-wasm.js/g' geodesy.ts > tmp_build/bundler/index.ts
+sed 's/@geodesy-wasm/\.\/geodesy-wasm.js/g' js/geodesy.ts > tmp_build/bundler/index.ts
 yarn tsc tmp_build/bundler/index.ts --outDir tmp_build/bundler --declaration --declarationDir tmp_build/bundler --target es2020 --module ES2020
 rm tmp_build/bundler/index.ts
 
 
 # Compile geodesy.ts for Node
-sed 's/@geodesy-wasm/\.\/geodesy-wasm.js/g' geodesy.ts > tmp_build/node/index.ts
+sed 's/@geodesy-wasm/\.\/geodesy-wasm.js/g' js/geodesy.ts > tmp_build/node/index.ts
 yarn tsc tmp_build/node/index.ts --outDir tmp_build/node --declaration --declarationDir tmp_build/node --target es2020 --module CommonJS
 rm tmp_build/node/index.ts
 

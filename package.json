@@ -2,6 +2,7 @@
   "main": "./geodesy.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "build:wrapper-dev": "wasm-pack build --target web --dev --out-dir pkg-js-dev",
     "build": "bash ./scripts/build.sh",
     "publish": "cd pkg && npm publish --access public"
   },
