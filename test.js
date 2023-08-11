@@ -6,19 +6,21 @@ const geodesy = require("./pkg/node/index");
 geodesy.set_panic_hook();
 geodesy.init_console_logger();
 
-function logNumber(num) {
+function colourString(num) {
   if (Math.abs(num) < 0.001) {
-    console.log("\x1b[32m%s\x1b[0m", num);
+    return ["\x1b[32m%s\x1b[0m", num];
   } else {
-    console.log("\x1b[31m%s\x1b[0m", num);
+    return ["\x1b[31m%s\x1b[0m", num];
   }
 }
 
 function logCoordDiff(coordsA, coordsB) {
   for (let i = 0; i < coordsA.length; i += 3) {
-    logNumber(coordsA[i] - coordsB[i]);
-    logNumber(coordsA[i + 1] - coordsB[i + 1]);
-    logNumber(coordsA[i + 2] - coordsB[i + 2]);
+    let x = colourString(coordsA[i] - coordsB[i]);
+    let y = colourString(coordsA[i + 1] - coordsB[i + 1]);
+    let z = colourString(coordsA[i + 2] - coordsB[i + 2]);
+
+    console.log(`${x[0]} ${x[0]} ${z[0]}`, x[1], y[1], z[1]);
   }
 }
 
