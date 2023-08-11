@@ -40,7 +40,7 @@ wasm-pack test --headless --chrome
 
 ### 🔧 Developing the JS wrapper
 
-The wrapper is intended to abstract some of the complexities of using as wasm library - primarily the need to deal with pointers and manage memory. The wrapper is written to provide a more familiar API for JS developers.
+The wrapper is intended to abstract some of the complexities of using a wasm library - like dealing with pointers and manage some memory. The wrapper is written to provide a more familiar API for JS developers.
 
 To develop the wrapper you must first build the wasm library:
 
