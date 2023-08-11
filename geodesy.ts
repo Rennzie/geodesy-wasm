@@ -1,4 +1,4 @@
-import * as GeodesyWasm from './pkg';
+import * as GeodesyWasm from '@geodesy-wasm';
 
 export class Geodesy {
   private ctx: GeodesyWasm.Ctx;
@@ -101,3 +101,5 @@ function unflattenCoords(
   }
   return res;
 }
+
+export * as GeodesyWasm from '@geodesy-wasm';
