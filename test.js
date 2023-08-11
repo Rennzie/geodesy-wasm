@@ -6,27 +6,6 @@ const geodesy = require("./pkg/node/index");
 geodesy.set_panic_hook();
 geodesy.init_console_logger();
 
-const CONTROL_POINTS = {
-  // {x: lon, y: lat, z: height} as expected by proj convention
-  // eslint-disable-next-line @typescript-eslint/naming-convention
-  EPSG_4326: { x: -0.09, y: 51.505, z: 30 },
-
-  // eslint-disable-next-line @typescript-eslint/naming-convention
-  EPSG_7405: { x: 532545.5951859689, y: 180234.91854853655, z: 30 },
-
-  // {x: easting, y: northing, z: height}
-  // eslint-disable-next-line @typescript-eslint/naming-convention
-  EPSG_3857: { x: -10018.754171394621, y: 6711113.243704713, z: 30 },
-
-  // {x, y, z}
-  // eslint-disable-next-line @typescript-eslint/naming-convention
-  EPSG_4978: {
-    x: 3978226.9243723676,
-    y: -6248.989379549275,
-    z: 4968732.216466796,
-  },
-};
-
 function logNumber(num) {
   if (Math.abs(num) < 0.001) {
     console.log("\x1b[32m%s\x1b[0m", num);
@@ -43,65 +22,50 @@ function logCoordDiff(coordsA, coordsB) {
   }
 }
 
+// prettier-ignore
+const bngControlCoords = [
+  544748.5367636156, 258372.49178149243, 9.61,
+  544750.8907704452, 258365.94195330486, 9.61,
+]
+
 // ------ Pipeline testing ------
-// EPSG:7405 to EPSG:3857 without Gridshift
+// EPSG:27700 to EPSG:3857 without Gridshift
 
+// Expected output generated with `echo <coords> | cct `bngTo3857WithoutGridshift`
 // prettier-ignore
-const flatCoord7405 = [
-  532545.5951859689, 180234.91854853655, 30,
-  531721.7451008538, 185220.42514814128, 30,
-  530884.804067163, 190762.03280916758, 30,
+const expectedBngTo3857OutputWithoutGridshift = [
+  13186.3825, 6837121.6345, 9.61,
+  13189.9031, 6837110.8322, 9.61,
 ];
 
-// prettier-ignore
-const expectedCoord3857 = [
-  -10018.754171394621, 6711113.243704713, 30,
-  -11131.949079327358, 6719165.106882159, 30,
-  -12245.143987260091, 6728120.968144314, 30,
-];
+// Modifications:
+// - tmerc: k changed to k_0
+const bngTo3857WithoutGridshift = `
++proj=pipeline
+  +step +inv +proj=tmerc +lat_0=49 +lon_0=-2 +k_0=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy
+  +step +proj=webmerc +lat_0=0 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84
+  `;
 
-// NOTE: geodesy uses k_0 while PROJ used k. Should be a PR to geodesy?
-const epsg7405toWebmercPipeline = `+proj=pipeline
-  +step +inv +proj=tmerc +lat_0=49 +lon_0=-2 +k_0=0.9996012717 +x_0=400000
-        +y_0=-100000 +ellps=airy
-  +step +proj=push +v_3
-  +step +proj=cart +ellps=airy
-  +step +proj=helmert +x=446.448 +y=-125.157 +z=542.06 +rx=0.15 +ry=0.247
-        +rz=0.842 +s=-20.489 +convention=position_vector
-  +step +inv +proj=cart +ellps=WGS84
-  +step +proj=pop +v_3
-  +step +proj=webmerc +lat_0=0 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84`;
-
-// const epsg7405toWebmercPipeline = `
-//  | tmerc inv lat_0=49 lon_0=-2 k_0=0.9996012717 x_0=400000 y_0=-100000 ellps=airy
-//  | push v_3
-//  | cart ellps=airy
-//  | helmert x=446.448 y=-125.157 z=542.06 rx=0.15 ry=0.247
-//        rz=0.842 s=-20.489 convention=position_vector
-//  | cart inv ellps=WGS84
-//  | pop v_3
-//  | webmerc lat_0=0 lon_0=0 x_0=0 y_0=0 ellps=WGS84
-//  `;
 console.log("EPSG:7405 TO EPSG:3857 without Gridshift");
 console.log("--------------------------------------");
 console.time("Create Ctx");
-const epsg7405toWebmercCtx = new geodesy.Ctx(epsg7405toWebmercPipeline, "gsb");
+const epsg7405toWebmercCtx = new geodesy.Ctx(bngTo3857WithoutGridshift, "gsb");
 console.timeEnd("Create Ctx");
 
 console.time("Create CoordBuffer");
-const flatCoord7405Ptr = new geodesy.CoordBuffer(
-  flatCoord7405,
+const flatCoordPtr = new geodesy.CoordBuffer(
+  bngControlCoords,
   geodesy.CoordDimension.Three
 );
 console.timeEnd("Create CoordBuffer");
 
 console.time("forward");
-epsg7405toWebmercCtx.forward(flatCoord7405Ptr);
+epsg7405toWebmercCtx.forward(flatCoordPtr);
 console.timeEnd("forward");
 epsg7405toWebmercCtx.free();
 
 console.time("toArray");
-const jsArray7405toWebmerc = flatCoord7405Ptr.toArray();
+const jsArray7405toWebmerc = flatCoordPtr.toArray();
 console.timeEnd("toArray");
 
 console.log("Converted Coords");
@@ -113,21 +77,26 @@ for (let i = 0; i < jsArray7405toWebmerc.length; i += 3) {
   );
 }
 console.log("Diff Expected Coords");
-logCoordDiff(jsArray7405toWebmerc, expectedCoord3857);
+logCoordDiff(jsArray7405toWebmerc, expectedBngTo3857OutputWithoutGridshift);
 
 // ------ Gridshift testing ------
+
+// Created with cct
+// prettier-ignore
+const expectedBngTo3857OutputWithGridshift = [
+  13004.3086, 6837202.7637, 9.6100,
+  13007.8289, 6837191.9623, 9.6100
+];
 
 console.log("\n");
 console.log("EPSG:7405 TO EPSG:3857 with Gridshift");
 console.log("--------------------------------------");
 
-// const epsg745Grid = `
-//    | tmerc inv lat_0=49 lon_0=-2 k_0=0.9996012717 x_0=400000 y_0=-100000 ellps=airy
-//    | gridshift inv grids=OSTN15_NTv2_OSGBtoETRS.gsb
-//    | webmerc inv lat_0=0 lon_0=0 x_0=0 y_0=0 ellps=WGS84
-//    `;
-
-const epsg745Grid = `+proj=pipeline
+// Modifications:
+// - tmerc: k changed to k_0
+// - hgridshift changed to gridshift
+const bngTo3857WithGridshift = `
++proj=pipeline
   +step +inv +proj=tmerc +lat_0=49 +lon_0=-2 +k_0=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy
   +step +proj=gridshift +grids=OSTN15_NTv2_OSGBtoETRS.gsb
   +step +proj=webmerc +lat_0=0 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84`;
@@ -141,14 +110,14 @@ const dataView = new DataView(gridShiftFile.buffer);
 
 console.time("Create Ctx with GSB");
 const epsg7405toGridCtx = new geodesy.Ctx(
-  epsg745Grid,
+  bngTo3857WithGridshift,
   "OSTN15_NTv2_OSGBtoETRS.gsb",
   dataView
 );
 console.timeEnd("Create Ctx with GSB");
 
 const flatCoord7405Ptrv2 = new geodesy.CoordBuffer(
-  flatCoord7405,
+  bngControlCoords,
   geodesy.CoordDimension.Three
 );
 
@@ -169,4 +138,4 @@ for (let i = 0; i < jsArray7405toWebmercV2.length; i += 3) {
   );
 }
 console.log("Diff Expected Coords");
-logCoordDiff(jsArray7405toWebmercV2, expectedCoord3857);
+logCoordDiff(jsArray7405toWebmercV2, expectedBngTo3857OutputWithGridshift);

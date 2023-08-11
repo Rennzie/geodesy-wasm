@@ -2,7 +2,6 @@ use super::coordinate::CoordBuffer;
 use super::wasmcontext::WasmContext;
 use crate::error::WasmResult;
 use geodesy_rs::prelude::*;
-use log::debug;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -30,8 +29,6 @@ impl Ctx {
         if definition.contains("+proj=") {
             geodesy_def = parse_proj(definition);
         }
-        // TODO: Remove: Only for debugging
-        debug!("geodesy_def: {:?}", geodesy_def);
 
         let op_handle = context.op(geodesy_def.as_str());
         match op_handle {
