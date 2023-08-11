@@ -56,8 +56,8 @@ cp tmp_build/bundler/{package.json,LICENSE,README.md} pkg/
 echo '{"type": "module"}' > pkg/esm/package.json
 
 # Update files array in package.json using JQ
-# Set module field to bundler/arrow1.js
-# Set types field to bundler/arrow1.d.ts
+# Set module field to bundler/index.js
+# Set types field to bundler/index.d.ts
 jq '.files = ["*"] | .module="bundler/index.js" | .types="bundler/index.d.ts"' pkg/package.json > pkg/package.json.tmp
 
 # Overwrite existing package.json file
