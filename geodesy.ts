@@ -21,11 +21,7 @@ export class Geodesy {
   constructor(definition: string, gridKey = 'gsb', grid?: DataView) {
     this.ctx = new GeodesyWasm.Ctx(definition, gridKey, grid);
 
-    // An attempt to avoid leaking wasm memory if the Geodesy object is Garbage Collected
-    const finalizer = new FinalizationRegistry(obj => {
-      this.ctx.free();
-    });
-    finalizer.register(this, 'Geodesy');
+    // TODO: How do we cleanup wasm memory if the class is GC'd?
   }
 
   /**
