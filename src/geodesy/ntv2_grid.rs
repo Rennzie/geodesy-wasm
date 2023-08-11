@@ -10,15 +10,11 @@ use crate::error::{Error, Result};
 use js_sys::DataView;
 
 const SEC_TO_DEG: f64 = 0.0002777778;
-const DEG_TO_SEC: f64 = 3600.0;
-const SEC_TO_MIN: f64 = 0.0166667;
+const SEC_PER_MIN: f64 = 60.0;
 
 // Both overview and sub grid headers have 11 fields of 16 bytes each.
 const NTV2_HEADER_SIZE: usize = 11 * 16;
 const NTV2_NODE_SIZE: usize = 16;
-
-const ERR_INVALID_HEADER: &str = "Wrong header";
-const ERR_INVALID_GRID_TO_SHORT: &str = "Invalid Grid: To Short";
 
 // Buffer offsets for the NTv2 subgrid header
 const NTV2_SUBGRID_NLAT: usize = 88; // (f64) upper latitude (in seconds)
@@ -39,7 +35,7 @@ pub fn parse_ntv2_to_gravsoft_bin(view: &DataView) -> Result<Vec<u8>> {
     // TODO: read the header magic (string) and compare it to NTV2_MAGIC
     let num_of_fields = view.get_int32_endian(8, is_le);
     if num_of_fields != 11 {
-        return Err(Error::InvalidNtv2GridFormat(ERR_INVALID_HEADER).into());
+        return Err(Error::InvalidNtv2GridFormat("Wrong header").into());
     }
 
     let num_sub_grids = view.get_int32_endian(40, is_le) as usize;
@@ -60,22 +56,20 @@ pub fn parse_ntv2_to_gravsoft_bin(view: &DataView) -> Result<Vec<u8>> {
 /// The subsequent rows contain the grid values which should be in seconds or arc.
 /// See [geodesy_rs::grid::gravsoft_grid_reader](https://github.com/Rennzie/geodesy/blob/49384de0c70135fceac6f00ca367d171a1a8fe2e/src/grid/mod.rs#L208)
 fn into_gravsoft_bin(header: Vec<f64>, grid: Vec<Vec<f64>>) -> Result<Vec<u8>> {
-    let gravsoft_header = header
-        .iter()
-        .map(|value| format!("{} ", value))
-        .collect::<String>();
+    let mut gravsoft = String::with_capacity(header.len() * 10 + grid.len() * grid[0].len() * 10);
+    for value in header {
+        gravsoft.push_str(&value.to_string());
+        gravsoft.push(' ');
+    }
+    gravsoft.push('\n');
+    for row in &grid {
+        for value in row {
+            gravsoft.push_str(&value.to_string());
+            gravsoft.push(' ');
+        }
+        gravsoft.push('\n');
+    }
 
-    let grav_soft_grid = grid
-        .iter()
-        .map(|value| {
-            format!(
-                "{}\n",
-                value.iter().map(|v| format!("{} ", v)).collect::<String>()
-            )
-        })
-        .collect::<String>();
-
-    let gravsoft = gravsoft_header + "\n" + &grav_soft_grid;
     Ok(gravsoft.into_bytes())
 }
 
@@ -84,17 +78,14 @@ fn read_ntv2_subgrid(
     offset: usize,
     is_le: bool,
 ) -> Result<(Vec<f64>, Vec<Vec<f64>>)> {
-    let lat_0 = view.get_float64_endian(offset + NTV2_SUBGRID_NLAT, is_le) * SEC_TO_DEG; // Latitude of the first (typically northernmost) row of the grid
-    let lat_1 = view.get_float64_endian(offset + NTV2_SUBGRID_SLAT, is_le) * SEC_TO_DEG; // Latitude of the last (typically southernmost) row of the grid
+    let lat_0 = view.get_float64_endian(offset + NTV2_SUBGRID_NLAT, is_le); // Latitude of the first (typically northernmost) row of the grid
+    let lat_1 = view.get_float64_endian(offset + NTV2_SUBGRID_SLAT, is_le); // Latitude of the last (typically southernmost) row of the grid
 
-    // The Canadian makers of NTv2 have flipped the signs on East(-) and West(+),
-    // probably because all of Canada is west of Greenwich.
-    // By common convention East is negative and West is positive so we flip them here
-    let lon_0 = -view.get_float64_endian(offset + NTV2_SUBGRID_WLON, is_le) * SEC_TO_DEG; // Longitude of the first (typically westernmost) column of each row
-    let lon_1 = -view.get_float64_endian(offset + NTV2_SUBGRID_ELON, is_le) * SEC_TO_DEG; // Longitude of the last (typically easternmost) column of each row
+    let lon_0 = view.get_float64_endian(offset + NTV2_SUBGRID_WLON, is_le); // Longitude of the first (typically westernmost) column of each row
+    let lon_1 = view.get_float64_endian(offset + NTV2_SUBGRID_ELON, is_le); // Longitude of the last (typically easternmost) column of each row
 
-    let dlat = view.get_float64_endian(offset + NTV2_SUBGRID_DLAT, is_le) * SEC_TO_DEG; // Signed distance between two consecutive rows
-    let dlon = view.get_float64_endian(offset + NTV2_SUBGRID_DLON, is_le) * SEC_TO_DEG; // Signed distance between two consecutive columns
+    let dlat = view.get_float64_endian(offset + NTV2_SUBGRID_DLAT, is_le); // Signed distance between two consecutive rows
+    let dlon = view.get_float64_endian(offset + NTV2_SUBGRID_DLON, is_le); // Signed distance between two consecutive columns
 
     let num_nodes = view.get_int32_endian(offset + NTV2_SUBGRID_GSCOUNT, is_le) as usize;
 
@@ -102,45 +93,58 @@ fn read_ntv2_subgrid(
     let grid_end_offset = grid_start_offset + num_nodes * NTV2_NODE_SIZE;
 
     if grid_end_offset > view.byte_length() {
-        return Err(Error::InvalidNtv2GridFormat(ERR_INVALID_GRID_TO_SHORT).into());
+        return Err(Error::InvalidNtv2GridFormat("Invalid Grid: Too Short"));
     }
 
-    let rows = ((lat_1 - lat_0) / -dlat + 1.5).floor() as usize;
-    let cols = ((lon_1 - lon_0) / dlon + 1.5).floor() as usize;
+    let rows = (((lat_1 - lat_0) / dlat).abs() + 1.0).floor() as usize;
+    let cols = (((lon_0 - lon_1) / dlon).abs() + 1.0).floor() as usize;
 
-    let mut header = Vec::<f64>::new();
-    header.push(lat_1);
-    header.push(lat_0);
-    header.push(lon_0);
-    header.push(lon_1);
-    header.push(dlat);
-    header.push(dlon);
+    if num_nodes != (rows * cols) {
+        return Err(Error::InvalidNtv2GridFormat(
+            "Invalid Grid: Number of nodes does not match the grid size",
+        ));
+    }
+
+    // Unpack the grid into vectors of corrections (Values in arc)
+    // By NTv2 Convention the grid is ordered from SE to NW
+    let mut raw_grid = Vec::<[f64; 2]>::with_capacity(num_nodes);
+    for i in 0..num_nodes {
+        let offset = grid_start_offset + i * NTV2_NODE_SIZE;
+        let lat_corr = view.get_float64_endian(offset + NTV2_NODE_LAT_CORRN, is_le);
+        let lon_corr = view.get_float64_endian(offset + NTV2_NODE_LON_CORRN, is_le);
+        raw_grid.push([lat_corr, lon_corr]);
+    }
+
+    // Because only the insane work SE to NW!
+    raw_grid.reverse();
 
     // An interleaved vector of node values ordered [[lat₀, lon₀...latₙ, lonₙ]ᵣ₀, [lat₀, lon₀...latₙ, lonₙ]ᵣₙ]
+    // Where lat/lon values are in arc minutes as is required by the Gravsoft reader in Rust Geodesy
     let mut grid = Vec::<Vec<f64>>::with_capacity(rows);
 
-    // Gravsoft grids are North West in the top left corner,
-    // opposite to NTv2 which starts in the South East corner.
-    for r in (0..rows).rev() {
+    for r in 0..rows {
         let mut row = Vec::<f64>::with_capacity(cols * 2);
-        for c in (0..cols).rev() {
-            let offset = grid_start_offset + c * r * NTV2_NODE_SIZE;
-            let lat_correction = view.get_float64_endian(offset + NTV2_NODE_LAT_CORRN, is_le);
-            // And again we flip the longitude sign so East is positive and West is negative.
-            let lon_correction = view.get_float64_endian(offset + NTV2_NODE_LON_CORRN, is_le);
+        for c in 0..cols {
+            let i = r * (cols - 1) + c;
+            let lat_corr = raw_grid[i][0];
+            let lon_corr = raw_grid[i][1];
 
-            // TODO: What is the value expected by gravsoft, just the correction or is it the node lat/lon + the correction?
-            // For horizontal datum shifts, the grid values are in minutes-of-arc
-            // and in latitude/longitude order - From Geodesy gravsoft parser.
-            row.push((lat_correction + dlat * DEG_TO_SEC) * SEC_TO_MIN);
-            row.push(lon_correction * SEC_TO_MIN);
+            row.push(lat_corr / SEC_PER_MIN);
+            row.push(lon_corr / SEC_PER_MIN);
         }
         grid.push(row);
     }
 
-    use log::info;
-    info!("header: {:?}", header);
-    // info!("grid: {:?}", grid[0]);
+    let mut header = Vec::<f64>::new();
+    header.push(lat_1 * SEC_TO_DEG);
+    header.push(lat_0 * SEC_TO_DEG);
+    // The Canadian makers of NTv2 have flipped the signs on East(-) and West(+),
+    // probably because all of Canada is west of Greenwich.
+    // By convention East is negative and West is positive so we flip them here
+    header.push(-lon_0 * SEC_TO_DEG);
+    header.push(-lon_1 * SEC_TO_DEG);
+    header.push(dlat * SEC_TO_DEG);
+    header.push(dlon * SEC_TO_DEG);
 
     Ok((header, grid))
 }

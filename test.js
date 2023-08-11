@@ -27,6 +27,22 @@ const CONTROL_POINTS = {
   },
 };
 
+function logNumber(num) {
+  if (Math.abs(num) < 0.001) {
+    console.log("\x1b[32m%s\x1b[0m", num);
+  } else {
+    console.log("\x1b[31m%s\x1b[0m", num);
+  }
+}
+
+function logCoordDiff(coordsA, coordsB) {
+  for (let i = 0; i < coordsA.length; i += 3) {
+    logNumber(coordsA[i] - coordsB[i]);
+    logNumber(coordsA[i + 1] - coordsB[i + 1]);
+    logNumber(coordsA[i + 2] - coordsB[i + 2]);
+  }
+}
+
 // ------ Pipeline testing ------
 // EPSG:7405 to EPSG:3857 without Gridshift
 
@@ -97,13 +113,7 @@ for (let i = 0; i < jsArray7405toWebmerc.length; i += 3) {
   );
 }
 console.log("Diff Expected Coords");
-for (let i = 0; i < jsArray7405toWebmerc.length; i += 3) {
-  console.log(
-    jsArray7405toWebmerc[i] - expectedCoord3857[i],
-    jsArray7405toWebmerc[i + 1] - expectedCoord3857[i + 1],
-    jsArray7405toWebmerc[i + 2] - expectedCoord3857[i + 2]
-  );
-}
+logCoordDiff(jsArray7405toWebmerc, expectedCoord3857);
 
 // ------ Gridshift testing ------
 
@@ -159,10 +169,4 @@ for (let i = 0; i < jsArray7405toWebmercV2.length; i += 3) {
   );
 }
 console.log("Diff Expected Coords");
-for (let i = 0; i < jsArray7405toWebmercV2.length; i += 3) {
-  console.log(
-    jsArray7405toWebmercV2[i] - expectedCoord3857[i],
-    jsArray7405toWebmercV2[i + 1] - expectedCoord3857[i + 1],
-    jsArray7405toWebmercV2[i + 2] - expectedCoord3857[i + 2]
-  );
-}
+logCoordDiff(jsArray7405toWebmercV2, expectedCoord3857);
