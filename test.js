@@ -22,6 +22,33 @@ function logCoordDiff(coordsA, coordsB) {
   }
 }
 
+class Geod {
+  ctx;
+  constructor(definition, gridKey = "gsb", dataView) {
+    console.time("Create Ctx");
+    this.ctx = new geodesy.Ctx(definition, gridKey, dataView);
+    console.timeEnd("Create Ctx");
+  }
+
+  forward(coords) {
+    console.time("Create CoordBuffer");
+    const coordBufPtr = new geodesy.CoordBuffer(
+      coords,
+      geodesy.CoordDimension.Three
+    );
+    console.timeEnd("Create CoordBuffer");
+
+    console.time("forward");
+    this.ctx.forward(coordBufPtr);
+    console.timeEnd("forward");
+
+    console.time("toArray");
+    const resArray = coordBufPtr.toArray();
+    console.timeEnd("toArray");
+    return resArray;
+  }
+}
+
 // prettier-ignore
 const bngControlCoords = [
   544748.5367636156, 258372.49178149243, 9.61,
@@ -48,36 +75,23 @@ const bngTo3857WithoutGridshift = `
 
 console.log("EPSG:7405 TO EPSG:3857 without Gridshift");
 console.log("--------------------------------------");
-console.time("Create Ctx");
-const epsg7405toWebmercCtx = new geodesy.Ctx(bngTo3857WithoutGridshift, "gsb");
-console.timeEnd("Create Ctx");
 
-console.time("Create CoordBuffer");
-const flatCoordPtr = new geodesy.CoordBuffer(
-  bngControlCoords,
-  geodesy.CoordDimension.Three
-);
-console.timeEnd("Create CoordBuffer");
+const bngTo3857WithoutGridshiftCtx = new Geod(bngTo3857WithoutGridshift, "gsb");
+const withoutGridshiftResult =
+  bngTo3857WithoutGridshiftCtx.forward(bngControlCoords);
 
-console.time("forward");
-epsg7405toWebmercCtx.forward(flatCoordPtr);
-console.timeEnd("forward");
-epsg7405toWebmercCtx.free();
-
-console.time("toArray");
-const jsArray7405toWebmerc = flatCoordPtr.toArray();
-console.timeEnd("toArray");
+bngTo3857WithoutGridshiftCtx.ctx.free();
 
 console.log("Converted Coords");
-for (let i = 0; i < jsArray7405toWebmerc.length; i += 3) {
+for (let i = 0; i < withoutGridshiftResult.length; i += 3) {
   console.log(
-    jsArray7405toWebmerc[i],
-    jsArray7405toWebmerc[i + 1],
-    jsArray7405toWebmerc[i + 2]
+    withoutGridshiftResult[i],
+    withoutGridshiftResult[i + 1],
+    withoutGridshiftResult[i + 2]
   );
 }
 console.log("Diff Expected Coords");
-logCoordDiff(jsArray7405toWebmerc, expectedBngTo3857OutputWithoutGridshift);
+logCoordDiff(withoutGridshiftResult, expectedBngTo3857OutputWithoutGridshift);
 
 // ------ Gridshift testing ------
 
@@ -99,43 +113,29 @@ const bngTo3857WithGridshift = `
 +proj=pipeline
   +step +inv +proj=tmerc +lat_0=49 +lon_0=-2 +k_0=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy
   +step +proj=gridshift +grids=OSTN15_NTv2_OSGBtoETRS.gsb
-  +step +proj=webmerc +lat_0=0 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84`;
+  +step +proj=webmerc +lat_0=0 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84
+  `;
 
 const fs = require("fs");
 
-const gridShiftFile = fs.readFileSync(
-  "/Users/sean/Documents/Project-test-data/gridshifts/OSTN15_NTv2_OSGBtoETRS.gsb"
-);
+const gridShiftFile = fs.readFileSync("./OSTN15_NTv2_OSGBtoETRS.gsb");
 const dataView = new DataView(gridShiftFile.buffer);
 
 console.time("Create Ctx with GSB");
-const epsg7405toGridCtx = new geodesy.Ctx(
+const bngTo3857WithGridshiftCtx = new Geod(
   bngTo3857WithGridshift,
   "OSTN15_NTv2_OSGBtoETRS.gsb",
   dataView
 );
-console.timeEnd("Create Ctx with GSB");
-
-const flatCoord7405Ptrv2 = new geodesy.CoordBuffer(
-  bngControlCoords,
-  geodesy.CoordDimension.Three
-);
-
-console.time("forward");
-epsg7405toGridCtx.forward(flatCoord7405Ptrv2);
-console.timeEnd("forward");
-
-console.time("toArray");
-const jsArray7405toWebmercV2 = flatCoord7405Ptrv2.toArray();
-console.timeEnd("toArray");
+const withGridshiftResult = bngTo3857WithGridshiftCtx.forward(bngControlCoords);
 
 console.log("Converted Coords");
-for (let i = 0; i < jsArray7405toWebmercV2.length; i += 3) {
+for (let i = 0; i < withGridshiftResult.length; i += 3) {
   console.log(
-    jsArray7405toWebmercV2[i],
-    jsArray7405toWebmercV2[i + 1],
-    jsArray7405toWebmercV2[i + 2]
+    withGridshiftResult[i],
+    withGridshiftResult[i + 1],
+    withGridshiftResult[i + 2]
   );
 }
 console.log("Diff Expected Coords");
-logCoordDiff(jsArray7405toWebmercV2, expectedBngTo3857OutputWithGridshift);
+logCoordDiff(withGridshiftResult, expectedBngTo3857OutputWithGridshift);
