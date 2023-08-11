@@ -17,32 +17,44 @@ fi
 
 ######################################
 # Build node version into tmp_build/node
-echo "Building node target"
-wasm-pack build \
-  $BUILD \
-  --out-dir tmp_build/node \
-  --out-name index \
-  --target nodejs \
-  $FLAGS
+if [ -z "${TARGET+x}" ] || [ "$TARGET" == "node" ]; then
+  echo "Building node target"
+  wasm-pack build \
+    $BUILD \
+    --out-dir tmp_build/node \
+    --out-name index \
+    --target nodejs \
+    $FLAGS
+else
+  echo "Skipping node target"
+fi
+
 
 # Build web version into tmp_build/esm
-echo "Building esm target"
-wasm-pack build \
-  $BUILD \
-  --out-dir tmp_build/esm \
-  --out-name index \
-  --target web \
-  $FLAGS
+if [ -z "${TARGET+x}" ] || [ "$TARGET" == "esm" ]; then
+  echo "Building esm target"
+  wasm-pack build \
+    $BUILD \
+    --out-dir tmp_build/esm \
+    --out-name index \
+    --target web \
+    $FLAGS
+else
+  echo "Skipping esm target"
+fi
 
 # Build bundler version into tmp_build/bundler
-echo "Building bundler target"
-wasm-pack build \
-  $BUILD \
-  --out-dir tmp_build/bundler \
-  --out-name index \
-  --target bundler \
-  $FLAGS
-
+if [ -z "${TARGET+x}" ] || [ "$TARGET" == "bundler" ]; then
+  echo "Building bundler target"
+  wasm-pack build \
+    $BUILD \
+    --out-dir tmp_build/bundler \
+    --out-name index \
+    --target bundler \
+    $FLAGS
+else
+  echo "Skipping bundler target"
+fi
 # Copy files into pkg/
 mkdir -p pkg/{node,esm,bundler}
 
