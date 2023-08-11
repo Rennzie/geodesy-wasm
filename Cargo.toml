@@ -1,6 +1,6 @@
 [package]
 name = "geodesy-wasm"
-version = "0.1.0"
+version = "0.2.0--alpha1"
 authors = ["Sean Rennie <sean.rennie@sensat.co.uk>"]
 edition = "2021"
 

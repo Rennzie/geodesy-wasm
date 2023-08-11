@@ -3,4 +3,6 @@
 Cargo.lock
 bin/
 pkg/
+pkg-js-dev/
 wasm-pack.log
+node_modules

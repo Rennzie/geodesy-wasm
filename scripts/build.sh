@@ -21,17 +21,8 @@ echo "Building node target"
 wasm-pack build \
   $BUILD \
   --out-dir tmp_build/node \
-  --out-name index \
+  --out-name geodesy-wasm \
   --target nodejs \
-  $FLAGS
-
-# Build web version into tmp_build/esm
-echo "Building esm target"
-wasm-pack build \
-  $BUILD \
-  --out-dir tmp_build/esm \
-  --out-name index \
-  --target web \
   $FLAGS
 
 # Build bundler version into tmp_build/bundler
@@ -39,26 +30,40 @@ echo "Building bundler target"
 wasm-pack build \
   $BUILD \
   --out-dir tmp_build/bundler \
-  --out-name index \
+  --out-name geodesy-wasm \
   --target bundler \
   $FLAGS
 
+
+
+# Compile JS Wrapper
+
+# Compile geodesy.ts for bundler
+sed 's/@geodesy-wasm/\.\/geodesy-wasm.js/g' js/geodesy.ts > tmp_build/bundler/index.ts
+yarn tsc tmp_build/bundler/index.ts --outDir tmp_build/bundler --declaration --declarationDir tmp_build/bundler --target es2020 --module ES2020
+rm tmp_build/bundler/index.ts
+
+
+# Compile geodesy.ts for Node
+sed 's/@geodesy-wasm/\.\/geodesy-wasm.js/g' js/geodesy.ts > tmp_build/node/index.ts
+yarn tsc tmp_build/node/index.ts --outDir tmp_build/node --declaration --declarationDir tmp_build/node --target es2020 --module CommonJS
+rm tmp_build/node/index.ts
+
 # Copy files into pkg/
-mkdir -p pkg/{node,esm,bundler}
-
+mkdir -p pkg/{node,bundler}
+cp tmp_build/bundler/geodesy-wasm* pkg/bundler/
 cp tmp_build/bundler/index* pkg/bundler/
-cp tmp_build/esm/index* pkg/esm
-cp tmp_build/node/index* pkg/node
 
-cp tmp_build/bundler/{package.json,LICENSE,README.md} pkg/
+cp tmp_build/node/geodesy-wasm* pkg/node
+cp tmp_build/node/index* pkg/node/
 
-# Create minimal package.json in esm/ folder with type: module
-echo '{"type": "module"}' > pkg/esm/package.json
+cp tmp_build/bundler/{package.json,README.md} pkg/
+cp {LICENSE-MIT,LICENSE-APACHE} pkg/
 
 # Update files array in package.json using JQ
-# Set module field to bundler/arrow1.js
-# Set types field to bundler/arrow1.d.ts
-jq '.files = ["*"] | .module="bundler/index.js" | .types="bundler/index.d.ts"' pkg/package.json > pkg/package.json.tmp
+# Set module field to bundler/geodesy-wasm.js
+# Set types field to bundler/geodesy-wasm.d.ts
+jq '.files = ["*"] | .module="bundler/index.js" | .types="bundler/index.d.ts" | .license="(Apache-2.0 OR MIT)"' pkg/package.json > pkg/package.json.tmp
 
 # Overwrite existing package.json file
 mv pkg/package.json.tmp pkg/package.json
