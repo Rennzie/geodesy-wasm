@@ -95,9 +95,10 @@ function unflattenCoords(
   coords: Float64Array,
   dimensions: GeodesyWasm.CoordDimension,
 ): number[][] {
+  const dim = dimensions === GeodesyWasm.CoordDimension.Two ? 2 : 3;
   const res: number[][] = [];
-  for (let i = 0; i < coords.length; i += dimensions) {
-    res.push(Array.from(coords.subarray(i, i + dimensions)));
+  for (let i = 0; i < coords.length; i += dim) {
+    res.push(Array.from(coords.subarray(i, i + dim)));
   }
   return res;
 }

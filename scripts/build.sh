@@ -57,12 +57,13 @@ cp tmp_build/bundler/index* pkg/bundler/
 cp tmp_build/node/geodesy-wasm* pkg/node
 cp tmp_build/node/index* pkg/node/
 
-cp tmp_build/bundler/{package.json,LICENSE-MIT,LICENSE-APACHE,README.md} pkg/
+cp tmp_build/bundler/{package.json,README.md} pkg/
+cp {LICENSE-MIT,LICENSE-APACHE} pkg/
 
 # Update files array in package.json using JQ
 # Set module field to bundler/geodesy-wasm.js
 # Set types field to bundler/geodesy-wasm.d.ts
-jq '.files = ["*"] | .module="bundler/index.js" | .types="bundler/index.d.ts"' pkg/package.json > pkg/package.json.tmp
+jq '.files = ["*"] | .module="bundler/index.js" | .types="bundler/index.d.ts" | .license="(Apache-2.0 OR MIT)"' pkg/package.json > pkg/package.json.tmp
 
 # Overwrite existing package.json file
 mv pkg/package.json.tmp pkg/package.json
