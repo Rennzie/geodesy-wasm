@@ -58,7 +58,8 @@ const bngControlCoords = [
 ]
 
 // ------ Pipeline testing ------
-// EPSG:27700 to EPSG:3857 without Gridshift
+console.log("EPSG:27700 TO EPSG:3857 without Gridshift");
+console.log("--------------------------------------");
 
 // Expected output generated with `echo <coords> | cct `bngTo3857WithoutGridshift`
 // prettier-ignore
@@ -74,9 +75,6 @@ const bngTo3857WithoutGridshift = `
   +step +inv +proj=tmerc +lat_0=49 +lon_0=-2 +k_0=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy
   +step +proj=webmerc +lat_0=0 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84
   `;
-
-console.log("EPSG:7405 TO EPSG:3857 without Gridshift");
-console.log("--------------------------------------");
 
 const bngTo3857WithoutGridshiftCtx = new Geod(bngTo3857WithoutGridshift, "gsb");
 const withoutGridshiftResult =
@@ -97,17 +95,16 @@ logCoordDiff(withoutGridshiftResult, expectedBngTo3857OutputWithoutGridshift);
 
 // ------ Gridshift testing ------
 
-// Created with cct
+console.log("\n");
+console.log("EPSG:27700 TO EPSG:3857 with Gridshift");
+console.log("--------------------------------------");
+
+// Expected output generated using cct `echo <coords> | cct `bngTo3857WithGridshift`
 // prettier-ignore
 const expectedBngTo3857OutputWithGridshift = [
   13004.3086, 6837202.7637, 9.6100,
   13007.8289, 6837191.9623, 9.6100
 ];
-
-console.log("\n");
-console.log("EPSG:7405 TO EPSG:3857 with Gridshift");
-console.log("--------------------------------------");
-
 // Modifications:
 // - tmerc: k changed to k_0
 // - hgridshift changed to gridshift
@@ -119,11 +116,9 @@ const bngTo3857WithGridshift = `
   `;
 
 const fs = require("fs");
-
 const gridShiftFile = fs.readFileSync("./OSTN15_NTv2_OSGBtoETRS.gsb");
 const dataView = new DataView(gridShiftFile.buffer);
 
-console.time("Create Ctx with GSB");
 const bngTo3857WithGridshiftCtx = new Geod(
   bngTo3857WithGridshift,
   "OSTN15_NTv2_OSGBtoETRS.gsb",
