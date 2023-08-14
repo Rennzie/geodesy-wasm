@@ -73,6 +73,10 @@ fn into_gravsoft_bin(header: Vec<f64>, grid: Vec<Vec<f64>>) -> Result<Vec<u8>> {
     Ok(gravsoft.into_bytes())
 }
 
+fn round_to_5_decimal_places(num: f64) -> f64 {
+    (num * 100000.0).round() / 100000.0
+}
+
 fn read_ntv2_subgrid(
     view: &DataView,
     offset: usize,
@@ -105,15 +109,25 @@ fn read_ntv2_subgrid(
         ));
     }
 
-    // Unpack the grid into vectors of corrections (Values in arc)
+    // Unpack the grid into vectors of corrections (Values in seconds-of-arc)
     // By NTv2 Convention the grid is ordered from SE to NW
     let mut raw_grid = Vec::<[f64; 2]>::with_capacity(num_nodes);
     for i in 0..num_nodes {
         let offset = grid_start_offset + i * NTV2_NODE_SIZE;
-        let lat_corr = view.get_float64_endian(offset + NTV2_NODE_LAT_CORRN, is_le);
-        let lon_corr = view.get_float64_endian(offset + NTV2_NODE_LON_CORRN, is_le);
-        raw_grid.push([lat_corr, lon_corr]);
+        let lat_corr = view.get_float32_endian(offset + NTV2_NODE_LAT_CORRN, is_le);
+        let lon_corr = view.get_float32_endian(offset + NTV2_NODE_LON_CORRN, is_le);
+        raw_grid.push([lat_corr.into(), lon_corr.into()]);
     }
+
+    use log::info;
+
+    info!(
+        "RAW_GRID: [SE lat_corr: {}, lon_corr: {}] - [NE lat_corr: {}, lon_corr: {}]",
+        round_to_5_decimal_places(raw_grid[0][0] * SEC_TO_DEG),
+        round_to_5_decimal_places(raw_grid[0][1] * SEC_TO_DEG),
+        round_to_5_decimal_places(raw_grid[num_nodes - 1][0] * SEC_TO_DEG),
+        round_to_5_decimal_places(raw_grid[num_nodes - 1][1] * SEC_TO_DEG),
+    );
 
     // Because only the insane work SE to NW!
     raw_grid.reverse();
@@ -121,19 +135,33 @@ fn read_ntv2_subgrid(
     // An interleaved vector of node values ordered [[lat₀, lon₀...latₙ, lonₙ]ᵣ₀, [lat₀, lon₀...latₙ, lonₙ]ᵣₙ]
     // Where lat/lon values are in arc minutes as is required by the Gravsoft reader in Rust Geodesy
     let mut grid = Vec::<Vec<f64>>::with_capacity(rows);
-
-    for r in 0..rows {
+    // A = n(i-1) + j
+    for i in 0..rows {
         let mut row = Vec::<f64>::with_capacity(cols * 2);
-        for c in 0..cols {
-            let i = r * (cols - 1) + c;
-            let lat_corr = raw_grid[i][0];
-            let lon_corr = raw_grid[i][1];
+        for j in 0..cols {
+            let idx = i * j;
+            let lat_corr = raw_grid[idx][0];
+            let lon_corr = raw_grid[idx][1];
 
             row.push(lat_corr / SEC_PER_MIN);
             row.push(lon_corr / SEC_PER_MIN);
         }
         grid.push(row);
     }
+
+    info!(
+        "GRID: {} - RAW_GRID: {}",
+        grid.len() * grid[0].len() / 2,
+        raw_grid.len()
+    );
+
+    info!(
+        "____GRID: [SE lat_corr: {}, lon_corr: {}] - [NE lat_corr: {}, lon_corr: {}]",
+        round_to_5_decimal_places(grid[rows - 1][cols - 2] * SEC_PER_MIN * SEC_TO_DEG),
+        round_to_5_decimal_places(grid[rows - 1][cols - 1] * SEC_PER_MIN * SEC_TO_DEG),
+        round_to_5_decimal_places(grid[0][0] * SEC_PER_MIN * SEC_TO_DEG),
+        round_to_5_decimal_places(grid[0][1] * SEC_PER_MIN * SEC_TO_DEG),
+    );
 
     let mut header = Vec::<f64>::new();
     header.push(lat_1 * SEC_TO_DEG);

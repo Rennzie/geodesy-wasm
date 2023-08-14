@@ -22,7 +22,7 @@ if [ -z "${TARGET+x}" ] || [ "$TARGET" == "node" ]; then
   wasm-pack build \
     $BUILD \
     --out-dir tmp_build/node \
-    --out-name index \
+    --out-name geodesy-wasm \
     --target nodejs \
     $FLAGS
 else
@@ -35,7 +35,7 @@ if [ -z "${TARGET+x}" ] || [ "$TARGET" == "bundler" ]; then
   wasm-pack build \
     $BUILD \
     --out-dir tmp_build/bundler \
-    --out-name index \
+    --out-name geodesy-wasm \
     --target bundler \
     $FLAGS
 else
