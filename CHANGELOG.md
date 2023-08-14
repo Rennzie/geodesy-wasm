@@ -19,5 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - This CHANGELOG file
+- A lightweight JS Wrapper with a friendlier API [#3](https://github.com/Rennzie/geodesy-wasm/issues/3)
+  - The `Geodesy` class is intended for most users. Advanced users can still use the `GeodesyWasm` components directly.
 
 [unreleased]:
