@@ -115,12 +115,13 @@ fn read_ntv2_subgrid(
     //      [[[lat₀, lon₀]...[latₙ, lonₙ]]ᵣ₀,..., [[lat₀, lon₀]...[latₙ, lonₙ]]ᵣₙ]
     //
     // lat/lon values are in minutes-of-arc as is expected by the Gravsoft reader in Rust Geodesy
+    // [RG Says it's minutes of arc but it's dividing by 3600 so it's actually expecting seconds of arc?!](https://github.com/busstoptaktik/geodesy/blob/3bb3beec2593ad9c35ef3c7e6d92383e6c9828ed/src/grid/mod.rs#L182-L192)
     let grid = (0..num_nodes)
         .map(|i| {
             let offset = grid_start_offset + i * NTV2_NODE_SIZE;
-            let lat_corr = view.get_float32_endian(offset + NTV2_NODE_LAT_CORRN, is_le) as f64;
-            let lon_corr = view.get_float32_endian(offset + NTV2_NODE_LON_CORRN, is_le) as f64;
-            [lat_corr * SEC_TO_MIN, lon_corr * SEC_TO_MIN]
+            let lat_corr = view.get_float32_endian(offset + NTV2_NODE_LAT_CORRN, is_le);
+            let lon_corr = view.get_float32_endian(offset + NTV2_NODE_LON_CORRN, is_le);
+            [lat_corr.into(), lon_corr.into()]
         })
         .rev() // Because only the insane work SE to NW!
         .collect::<Vec<[f64; 2]>>()
