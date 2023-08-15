@@ -10,7 +10,7 @@ use crate::error::{Error, Result};
 use js_sys::DataView;
 
 const SEC_TO_DEG: f64 = 0.0002777778;
-const SEC_PER_MIN: f64 = 60.0;
+const SEC_TO_MIN: f64 = 0.0166666667;
 
 // Both overview and sub grid headers have 11 fields of 16 bytes each.
 const NTV2_HEADER_SIZE: usize = 11 * 16;
@@ -55,7 +55,7 @@ pub fn parse_ntv2_to_gravsoft_bin(view: &DataView) -> Result<Vec<u8>> {
 /// The first row contains the header values which should be in degrees
 /// The subsequent rows contain the grid values which should be in seconds or arc.
 /// See [geodesy_rs::grid::gravsoft_grid_reader](https://github.com/Rennzie/geodesy/blob/49384de0c70135fceac6f00ca367d171a1a8fe2e/src/grid/mod.rs#L208)
-fn into_gravsoft_bin(header: Vec<f64>, grid: Vec<Vec<f64>>) -> Result<Vec<u8>> {
+fn into_gravsoft_bin(header: Vec<f64>, grid: Vec<Vec<[f64; 2]>>) -> Result<Vec<u8>> {
     let mut gravsoft = String::with_capacity(header.len() * 10 + grid.len() * grid[0].len() * 10);
     for value in header {
         gravsoft.push_str(&value.to_string());
@@ -63,9 +63,12 @@ fn into_gravsoft_bin(header: Vec<f64>, grid: Vec<Vec<f64>>) -> Result<Vec<u8>> {
     }
     gravsoft.push('\n');
     for row in &grid {
-        for value in row {
-            gravsoft.push_str(&value.to_string());
-            gravsoft.push(' ');
+        for col in row {
+            // We expect values to be ordered [lat, lon]
+            for value in col {
+                gravsoft.push_str(&value.to_string());
+                gravsoft.push(' ');
+            }
         }
         gravsoft.push('\n');
     }
@@ -81,7 +84,7 @@ fn read_ntv2_subgrid(
     view: &DataView,
     offset: usize,
     is_le: bool,
-) -> Result<(Vec<f64>, Vec<Vec<f64>>)> {
+) -> Result<(Vec<f64>, Vec<Vec<[f64; 2]>>)> {
     let lat_0 = view.get_float64_endian(offset + NTV2_SUBGRID_NLAT, is_le); // Latitude of the first (typically northernmost) row of the grid
     let lat_1 = view.get_float64_endian(offset + NTV2_SUBGRID_SLAT, is_le); // Latitude of the last (typically southernmost) row of the grid
 
@@ -100,6 +103,7 @@ fn read_ntv2_subgrid(
         return Err(Error::InvalidNtv2GridFormat("Invalid Grid: Too Short"));
     }
 
+    // As defined by https://web.archive.org/web/20140127204822if_/http://www.mgs.gov.on.ca:80/stdprodconsume/groups/content/@mgs/@iandit/documents/resourcelist/stel02_047447.pdf (pg 30)
     let rows = (((lat_1 - lat_0) / dlat).abs() + 1.0).floor() as usize;
     let cols = (((lon_0 - lon_1) / dlon).abs() + 1.0).floor() as usize;
 
@@ -109,59 +113,24 @@ fn read_ntv2_subgrid(
         ));
     }
 
-    // Unpack the grid into vectors of corrections (Values in seconds-of-arc)
-    // By NTv2 Convention the grid is ordered from SE to NW
-    let mut raw_grid = Vec::<[f64; 2]>::with_capacity(num_nodes);
-    for i in 0..num_nodes {
-        let offset = grid_start_offset + i * NTV2_NODE_SIZE;
-        let lat_corr = view.get_float32_endian(offset + NTV2_NODE_LAT_CORRN, is_le);
-        let lon_corr = view.get_float32_endian(offset + NTV2_NODE_LON_CORRN, is_le);
-        raw_grid.push([lat_corr.into(), lon_corr.into()]);
-    }
-
-    use log::info;
-
-    info!(
-        "RAW_GRID: [SE lat_corr: {}, lon_corr: {}] - [NE lat_corr: {}, lon_corr: {}]",
-        round_to_5_decimal_places(raw_grid[0][0] * SEC_TO_DEG),
-        round_to_5_decimal_places(raw_grid[0][1] * SEC_TO_DEG),
-        round_to_5_decimal_places(raw_grid[num_nodes - 1][0] * SEC_TO_DEG),
-        round_to_5_decimal_places(raw_grid[num_nodes - 1][1] * SEC_TO_DEG),
-    );
-
-    // Because only the insane work SE to NW!
-    raw_grid.reverse();
-
-    // An interleaved vector of node values ordered [[lat₀, lon₀...latₙ, lonₙ]ᵣ₀, [lat₀, lon₀...latₙ, lonₙ]ᵣₙ]
-    // Where lat/lon values are in arc minutes as is required by the Gravsoft reader in Rust Geodesy
-    let mut grid = Vec::<Vec<f64>>::with_capacity(rows);
-    // A = n(i-1) + j
-    for i in 0..rows {
-        let mut row = Vec::<f64>::with_capacity(cols * 2);
-        for j in 0..cols {
-            let idx = i * j;
-            let lat_corr = raw_grid[idx][0];
-            let lon_corr = raw_grid[idx][1];
-
-            row.push(lat_corr / SEC_PER_MIN);
-            row.push(lon_corr / SEC_PER_MIN);
-        }
-        grid.push(row);
-    }
-
-    info!(
-        "GRID: {} - RAW_GRID: {}",
-        grid.len() * grid[0].len() / 2,
-        raw_grid.len()
-    );
-
-    info!(
-        "____GRID: [SE lat_corr: {}, lon_corr: {}] - [NE lat_corr: {}, lon_corr: {}]",
-        round_to_5_decimal_places(grid[rows - 1][cols - 2] * SEC_PER_MIN * SEC_TO_DEG),
-        round_to_5_decimal_places(grid[rows - 1][cols - 1] * SEC_PER_MIN * SEC_TO_DEG),
-        round_to_5_decimal_places(grid[0][0] * SEC_PER_MIN * SEC_TO_DEG),
-        round_to_5_decimal_places(grid[0][1] * SEC_PER_MIN * SEC_TO_DEG),
-    );
+    // NTv2 nodes are order from SE to NW! Here we break them up into rows and columns
+    // reversing the order so we end up with a grid ordered from NW to SE.
+    //         NW=(r₀:c₀)      NE=(r₀:cₙ)           SW=(rₙ:c₀)      SE=(rₙ:cₙ)
+    //      [[[lat₀, lon₀]...[latₙ, lonₙ]]ᵣ₀,..., [[lat₀, lon₀]...[latₙ, lonₙ]]ᵣₙ]
+    //
+    // lat/lon values are in minutes-of-arc as is expected by the Gravsoft reader in Rust Geodesy
+    let grid = (0..num_nodes)
+        .map(|i| {
+            let offset = grid_start_offset + i * NTV2_NODE_SIZE;
+            let lat_corr = view.get_float32_endian(offset + NTV2_NODE_LAT_CORRN, is_le) as f64;
+            let lon_corr = view.get_float32_endian(offset + NTV2_NODE_LON_CORRN, is_le) as f64;
+            [lat_corr * SEC_TO_MIN, lon_corr * SEC_TO_MIN]
+        })
+        .rev() // Because only the insane work SE to NW!
+        .collect::<Vec<[f64; 2]>>()
+        .chunks(cols) // Chunk into rows
+        .map(|chunk| chunk.to_vec())
+        .collect::<Vec<Vec<[f64; 2]>>>();
 
     let mut header = Vec::<f64>::new();
     header.push(lat_1 * SEC_TO_DEG);
