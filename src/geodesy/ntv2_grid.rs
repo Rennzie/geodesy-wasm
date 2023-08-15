@@ -76,10 +76,6 @@ fn into_gravsoft_bin(header: Vec<f64>, grid: Vec<Vec<[f64; 2]>>) -> Result<Vec<u
     Ok(gravsoft.into_bytes())
 }
 
-fn round_to_5_decimal_places(num: f64) -> f64 {
-    (num * 100000.0).round() / 100000.0
-}
-
 fn read_ntv2_subgrid(
     view: &DataView,
     offset: usize,
