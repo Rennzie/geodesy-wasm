@@ -1,4 +1,4 @@
-use super::ntv2_grid::parse_ntv2_to_gravsoft_bin;
+use super::ntv2_grid::parse_ntv2_to_gravsoft;
 use crate::error::Result as GWResult;
 use geodesy_rs::context_authoring::{Context, OpConstructor, BUILTIN_ADAPTORS};
 use geodesy_rs::operator_authoring::{Grid, Op, ParsedParameters};
@@ -27,7 +27,7 @@ const BAD_ID_MESSAGE: RgError = RgError::General("WasmContext: Unknown operator 
 
 impl WasmContext {
     pub fn set_blob(&mut self, key: &str, data_view: js_sys::DataView) -> GWResult<()> {
-        let resource = parse_ntv2_to_gravsoft_bin(&data_view)?;
+        let resource = parse_ntv2_to_gravsoft(&data_view)?;
         self.data_views.insert(key.to_string(), resource);
 
         Ok(())
