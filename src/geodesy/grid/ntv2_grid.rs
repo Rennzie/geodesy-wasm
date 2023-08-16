@@ -29,11 +29,11 @@ const NODE_LON_CORRN: usize = 4; // (f32) correction to the longitude at this no
 /// And inspired by existing implementations in
 /// - https://github.com/proj4js/proj4js/blob/master/lib/nadgrid.js
 /// - https://github.com/3liz/proj4rs/blob/main/src/nadgrids/grid.rs
-pub fn parse_ntv2_to_gravsoft(view: &DataView) -> Result<Vec<u8>> {
+pub fn parse_ntv2_to_gravsoft(view: DataView) -> Result<Vec<u8>> {
     let is_le = view.get_int32_endian(8, true) == 11;
 
     let num_of_fields = view.get_int32_endian(8, is_le);
-    let magic = read_string(view, 0, 8)?;
+    let magic = read_string(&view, 0, 8);
     if num_of_fields != 11 && magic != "NUM_OREC".to_string() {
         return Err(Error::Ntv2InvalidGridFormat("Wrong header").into());
     }
@@ -44,13 +44,13 @@ pub fn parse_ntv2_to_gravsoft(view: &DataView) -> Result<Vec<u8>> {
         return Err(Error::Ntv2Unsupported("Contains more than one subgrid"));
     }
 
-    let gs_type = read_string(view, 56, 8)?;
+    let gs_type = read_string(&view, 56, 8);
     if gs_type != "SECONDS".to_string() {
-        return Err(Error::Ntv2Unsupported("Grid is not in seconds"));
+        return Err(Error::Ntv2Unsupported("Not in seconds"));
     }
 
-    let (header, _, cols) = read_subgrid_header(view, HEADER_SIZE, is_le)?;
-    let grid = read_subgrid_grid(view, HEADER_SIZE, is_le, cols)?;
+    let (header, _, cols) = read_subgrid_header(&view, HEADER_SIZE, is_le)?;
+    let grid = read_subgrid_grid(&view, HEADER_SIZE, is_le, cols)?;
 
     into_gravsoft_bin(header, grid)
 }
@@ -159,11 +159,12 @@ fn into_gravsoft_bin(header: Vec<f64>, grid: Vec<Vec<[f64; 2]>>) -> Result<Vec<u
     Ok(gravsoft.into_bytes())
 }
 
-fn read_string(view: &DataView, offset: usize, length: usize) -> Result<String> {
+fn read_string(view: &DataView, offset: usize, length: usize) -> String {
     let mut string = String::with_capacity(length);
     for i in 0..length {
         let char_code = view.get_uint8(offset + i);
         string.push(char_code as char);
     }
-    Ok(string)
+
+    string.trim().to_string()
 }

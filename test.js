@@ -53,10 +53,7 @@ const bngTo3857WithoutGridshift = `
 //       +y_0=-100000 +ellps=airy
 // +step +proj=webmerc +lat_0=0 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84
 
-const bngTo3857WithoutGridshiftCtx = new Geodesy(
-  bngTo3857WithoutGridshift,
-  'gsb',
-);
+const bngTo3857WithoutGridshiftCtx = new Geodesy(bngTo3857WithoutGridshift);
 const withoutGridshiftResult = bngTo3857WithoutGridshiftCtx
   .forward(bngControlCoords)
   .flat();
@@ -100,11 +97,9 @@ const fs = require('fs');
 const gridShiftFile = fs.readFileSync('./OSTN15_NTv2_OSGBtoETRS.gsb');
 const dataView = new DataView(gridShiftFile.buffer);
 
-const bngTo3857WithGridshiftCtx = new Geodesy(
-  bngTo3857WithGridshift,
-  'OSTN15_NTv2_OSGBtoETRS.gsb',
-  dataView,
-);
+const bngTo3857WithGridshiftCtx = new Geodesy(bngTo3857WithGridshift, {
+  'OSTN15_NTv2_OSGBtoETRS.gsb': dataView,
+});
 const withGridshiftResult = bngTo3857WithGridshiftCtx
   .forward(bngControlCoords)
   .flat();

@@ -15,11 +15,18 @@ export class Geodesy {
    * - See [Rust Geodesy](https://github.com/busstoptaktik/geodesy/blob/main/ruminations/002-rumination.md) for what operations are currently supported.
    * - There is also limited support for using a PROJ pipeline definition. Not all operations are supported and it's left to the users to figure out what can and can't be done.
    * - If you are used to using the Proj4.js CRS to CRS workflow you could try building a pipeline definition using `projinfo -o PROJ -k operation -s <source CRS> -t <target CRS>`
-   * @param gridKey
-   * @param grid
+   * @param gridMap - A Map of gridshift files used by the definition. The key is the grid name and the value is a `DataView` of the grid file.
    */
-  constructor(definition: string, gridKey = 'gsb', grid?: DataView) {
-    this.ctx = new GeodesyWasm.Ctx(definition, gridKey, grid);
+  constructor(definition: string, gridMap?: Record<string, DataView>) {
+    let rawGrids = undefined;
+    if (gridMap) {
+      rawGrids = new GeodesyWasm.RawGrids();
+      for (const [key, value] of Object.entries(gridMap)) {
+        rawGrids.add(key, value);
+      }
+    }
+
+    this.ctx = new GeodesyWasm.Ctx(definition, rawGrids);
 
     // TODO: How do we cleanup wasm memory if the class is GC'd?
   }

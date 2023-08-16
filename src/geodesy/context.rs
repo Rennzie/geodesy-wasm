@@ -1,4 +1,5 @@
 use super::coordinate::CoordBuffer;
+use super::grid::RawGrids;
 use super::wasmcontext::WasmContext;
 use crate::error::WasmResult;
 use geodesy_rs::prelude::*;
@@ -12,24 +13,22 @@ pub struct Ctx {
 
 #[wasm_bindgen]
 impl Ctx {
-    // TODO: Rework how the Ctx is initialized. Should check for grids and make sure there is a resource
     #[wasm_bindgen(constructor)]
-    pub fn new(
-        definition: &str,
-        grid_key: &str,
-        data_view: Option<js_sys::DataView>,
-    ) -> WasmResult<Ctx> {
+    pub fn new(definition: &str, grids: Option<RawGrids>) -> WasmResult<Ctx> {
         let mut context = WasmContext::new();
-
-        if let Some(data_view) = data_view {
-            context.set_blob(grid_key, data_view)?;
-        }
 
         let mut geodesy_def = definition.to_owned();
         if definition.contains("+proj=") {
             geodesy_def = parse_proj(definition);
         }
 
+        if let Some(grids) = grids {
+            for (grid_key, grid_blob) in grids.into_iter() {
+                context.set_blob(grid_key.as_str(), grid_blob)?;
+            }
+        }
+
+        // Missing grids will error out here
         let op_handle = context.op(geodesy_def.as_str());
         match op_handle {
             Ok(op_handle) => Ok(Self { context, op_handle }),
