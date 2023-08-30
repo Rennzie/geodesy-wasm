@@ -1,4 +1,4 @@
-use geodesy_rs::CoordinateSet;
+use geodesy_rs::prelude::*;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -7,11 +7,6 @@ pub enum CoordDimension {
     Three,
 }
 
-// LEARN: This will be a reference to the CoordSetBuffer in wasm memory
-// Because it's a struct, it CAN be mutated by rust code - which is useful as an argument to forward and inverse transformation in the Ctx.
-// It would be nice to move this to coordinates but that means the inner struct
-// MUST be public which errors on wasm_bindgen macro
-// LEARN: Adding skip to pub means we don't error but Js Cannot read the buffer directly, which is ok, it's not supposed to
 /// A wrapper around the `CoordSetBuffer` struct which allows for a
 /// mutable pointer to wasm memory.
 #[wasm_bindgen]
@@ -21,8 +16,8 @@ pub struct CoordBuffer(#[wasm_bindgen(skip)] pub CoordSetBuffer);
 impl CoordBuffer {
     /// Creates a new CoordBuffer from a JS array of f64 values.
     /// The array should be flat and contain either 2D or 3D coordinates.
-    /// Note: If you are providing angular coordinates, they should be in radians AND
-    /// it's assumed they are in the order (longitude, latitude, height) OR (easting, northing, height) for cartesian coords.
+    /// Note: If you are providing angular coordinates, they MUST be in radians AND
+    /// it's assumed they are in the order (longitude, latitude, height) OR (easting, northing, height).
     #[wasm_bindgen(constructor)]
     pub fn new(coord_buffer: Vec<f64>, dimension: CoordDimension) -> CoordBuffer {
         CoordBuffer(CoordSetBuffer::new(coord_buffer, dimension))
@@ -44,63 +39,62 @@ impl CoordBuffer {
 }
 
 /// A flat buffer of f64 values representing coordinates.
-/// Currently supports 2D and 3D coordinates.
+/// Currently supports 2D and 3D coordinate dimensions.
 /// Note: If you are providing angular coordinates coordinates, they should be in radians.
 pub struct CoordSetBuffer {
     pub buffer: Vec<f64>,
-    dimension: CoordDimension,
+    dimensions: CoordDimension,
 }
 
 impl CoordSetBuffer {
-    pub fn new(coord_buffer: Vec<f64>, dimension: CoordDimension) -> CoordSetBuffer {
+    pub fn new(coord_buffer: Vec<f64>, dimensions: CoordDimension) -> CoordSetBuffer {
         CoordSetBuffer {
             buffer: coord_buffer,
-            dimension,
+            dimensions,
+        }
+    }
+
+    pub fn with_2d(coord_buffer: Vec<f64>) -> CoordSetBuffer {
+        CoordSetBuffer {
+            buffer: coord_buffer,
+            dimensions: CoordDimension::Two,
+        }
+    }
+
+    pub fn with_3d(coord_buffer: Vec<f64>) -> CoordSetBuffer {
+        CoordSetBuffer {
+            buffer: coord_buffer,
+            dimensions: CoordDimension::Three,
+        }
+    }
+
+    pub fn dim(&self) -> usize {
+        match self.dimensions {
+            CoordDimension::Two => 2,
+            CoordDimension::Three => 3,
         }
     }
 }
 
 impl CoordinateSet for CoordSetBuffer {
     fn len(&self) -> usize {
-        match self.dimension {
-            CoordDimension::Two => self.buffer.len() / 2,
-            CoordDimension::Three => self.buffer.len() / 3,
-        }
+        self.buffer.len() / self.dim()
     }
 
-    fn get_coord(&self, index: usize) -> geodesy_rs::Coor4D {
-        let multiplier = match self.dimension {
-            CoordDimension::Two => 2,
-            CoordDimension::Three => 3,
-        };
-
-        let start = index * multiplier;
-
-        let first = self.buffer[start];
-        let second = self.buffer[start + 1];
-
-        match self.dimension {
-            CoordDimension::Two => geodesy_rs::Coor4D::raw(first, second, 0., 0.),
-            CoordDimension::Three => {
-                geodesy_rs::Coor4D::raw(first, second, self.buffer[start + 2], 0.)
-            }
+    fn get_coord(&self, index: usize) -> Coor4D {
+        let start = index * self.dim();
+        let mut result = Coor4D::origin();
+        for i in 0..self.dim() {
+            result[i] = self.buffer[start + i];
         }
+
+        result
     }
 
-    fn set_coord(&mut self, index: usize, value: &geodesy_rs::Coor4D) {
-        let multiplier = match self.dimension {
-            CoordDimension::Two => 2,
-            CoordDimension::Three => 3,
-        };
-
-        let start = index * multiplier;
-
-        self.buffer[start] = value.0[0];
-        self.buffer[start + 1] = value.0[1];
-
-        match self.dimension {
-            CoordDimension::Two => {}
-            CoordDimension::Three => self.buffer[start + 2] = value.0[2],
-        };
+    fn set_coord(&mut self, index: usize, value: &Coor4D) {
+        let start = index * self.dim();
+        for i in 0..self.dim() {
+            self.buffer[start + i] = value.0[i];
+        }
     }
 }
