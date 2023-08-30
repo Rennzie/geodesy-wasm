@@ -60,6 +60,16 @@ export class Geodesy {
 
     return unflattenCoords(resArray, dimensions);
   }
+
+  public roundTrip(coordinates: number[][]): number[][] {
+    const [coordBufPtr, dimensions] = prepareCoordinates(coordinates);
+    this.ctx.roundTrip(coordBufPtr);
+
+    // toArray() cleans ups the WASM memory so we don't need to call free() on the coordBufPtr
+    const resArray = coordBufPtr.toArray();
+
+    return unflattenCoords(resArray, dimensions);
+  }
 }
 
 // ---- Coordinate helpers ----

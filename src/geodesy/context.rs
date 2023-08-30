@@ -2,6 +2,7 @@ use super::coordinate::CoordBuffer;
 use super::grid::RawGrids;
 use super::wasmcontext::WasmContext;
 use crate::error::WasmResult;
+use geodesy_rs::authoring::parse_proj;
 use geodesy_rs::prelude::*;
 use wasm_bindgen::prelude::*;
 
@@ -19,7 +20,7 @@ impl Ctx {
 
         let mut geodesy_def = definition.to_owned();
         if definition.contains("+proj=") {
-            geodesy_def = parse_proj(definition);
+            geodesy_def = parse_proj(definition)?;
         }
 
         if let Some(grids) = grids {
@@ -39,9 +40,7 @@ impl Ctx {
     /// A forward transformation of the coordinates in the buffer.
     #[wasm_bindgen]
     pub fn forward(&self, operands: &mut CoordBuffer) -> WasmResult<usize> {
-        let converted = self
-            .context
-            .apply(self.op_handle, Direction::Fwd, &mut operands.0);
+        let converted = self.context.apply(self.op_handle, Fwd, &mut operands.0);
 
         match converted {
             Ok(c) => Ok(c),
@@ -52,11 +51,21 @@ impl Ctx {
     /// An inverse transformation of the coordinates in the buffer.
     #[wasm_bindgen]
     pub fn inverse(&self, operands: &mut CoordBuffer) -> WasmResult<usize> {
-        let converted = self
-            .context
-            .apply(self.op_handle, Direction::Inv, &mut operands.0);
+        let converted = self.context.apply(self.op_handle, Inv, &mut operands.0);
 
         match converted {
+            Ok(c) => Ok(c),
+            Err(e) => Err(JsError::new(&format!("{}", e))),
+        }
+    }
+
+    /// A convenience method for testing that a forward and inverse transformation
+    #[wasm_bindgen(js_name = roundTrip)]
+    pub fn round_trip(&self, operands: &mut CoordBuffer) -> WasmResult<usize> {
+        let fwd_count = self.context.apply(self.op_handle, Fwd, &mut operands.0);
+        let _inv_count = self.context.apply(self.op_handle, Inv, &mut operands.0);
+
+        match fwd_count {
             Ok(c) => Ok(c),
             Err(e) => Err(JsError::new(&format!("{}", e))),
         }
