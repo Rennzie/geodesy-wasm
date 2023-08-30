@@ -7,7 +7,6 @@ use std::iter::Map;
 use wasm_bindgen::prelude::*;
 type Blob = Vec<u8>;
 use crate::error::WasmResult;
-use ntv2_grid::parse_ntv2_to_gravsoft;
 
 /// A helper class for loading gridshift files into the `Ctx` class.
 /// The class is consumed in the `Ctx` new method to ensure we don't double the memory usage.
@@ -30,8 +29,13 @@ impl RawGrids {
     ///     - `NTv2` (.gsb)
     #[wasm_bindgen]
     pub fn add(&mut self, key: &str, data_view: DataView) -> WasmResult<()> {
-        let grid_blob = parse_ntv2_to_gravsoft(data_view)?;
-        self.0.insert(key.to_owned(), grid_blob);
+        let mut result = Vec::with_capacity(data_view.byte_length() as usize);
+
+        for i in 0..data_view.byte_length() {
+            let byte = data_view.get_uint8(i);
+            result.push(byte);
+        }
+        self.0.insert(key.to_owned(), result);
         Ok(())
     }
 }

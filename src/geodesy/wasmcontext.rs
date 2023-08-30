@@ -1,6 +1,6 @@
 use crate::error::Result as GWResult;
-use geodesy_rs::context_authoring::{Context, OpConstructor, BUILTIN_ADAPTORS};
-use geodesy_rs::operator_authoring::{Grid, Op, ParsedParameters};
+use geodesy_rs::authoring::{Context, OpConstructor, BUILTIN_ADAPTORS};
+use geodesy_rs::authoring::{Grid, Op, ParsedParameters};
 use geodesy_rs::prelude::*;
 use geodesy_rs::Error as RgError;
 use std::collections::BTreeMap;
