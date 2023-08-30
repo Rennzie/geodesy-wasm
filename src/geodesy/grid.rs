@@ -1,5 +1,3 @@
-mod ntv2_grid;
-
 use js_sys::DataView;
 use std::collections::btree_map::IntoIter;
 use std::collections::BTreeMap;
