@@ -17,37 +17,50 @@ fi
 
 ######################################
 # Build node version into tmp_build/node
-echo "Building node target"
-wasm-pack build \
-  $BUILD \
-  --out-dir tmp_build/node \
-  --out-name geodesy-wasm \
-  --target nodejs \
-  $FLAGS
+if [ -z "${TARGET+x}" ] || [ "$TARGET" == "node" ]; then
+  echo "Building node target"
+  wasm-pack build \
+    $BUILD \
+    --out-dir tmp_build/node \
+    --out-name geodesy-wasm \
+    --target nodejs \
+    $FLAGS
+else
+  echo "Skipping node target"
+fi
 
 # Build bundler version into tmp_build/bundler
-echo "Building bundler target"
-wasm-pack build \
-  $BUILD \
-  --out-dir tmp_build/bundler \
-  --out-name geodesy-wasm \
-  --target bundler \
-  $FLAGS
-
-
+if [ -z "${TARGET+x}" ] || [ "$TARGET" == "bundler" ]; then
+  echo "Building bundler target"
+  wasm-pack build \
+    $BUILD \
+    --out-dir tmp_build/bundler \
+    --out-name geodesy-wasm \
+    --target bundler \
+    $FLAGS
+else
+  echo "Skipping bundler target"
+fi
 
 # Compile JS Wrapper
 
 # Compile geodesy.ts for bundler
-sed 's/@geodesy-wasm/\.\/geodesy-wasm.js/g' js/geodesy.ts > tmp_build/bundler/index.ts
-yarn tsc tmp_build/bundler/index.ts --outDir tmp_build/bundler --declaration --declarationDir tmp_build/bundler --target es2020 --module ES2020
-rm tmp_build/bundler/index.ts
-
+if [ -z "${TARGET+x}" ] || [ "$TARGET" == "bundler" ]; then
+  sed 's/@geodesy-wasm/\.\/geodesy-wasm.js/g' js/geodesy.ts > tmp_build/bundler/index.ts
+  yarn tsc tmp_build/bundler/index.ts --outDir tmp_build/bundler --declaration --declarationDir tmp_build/bundler --target es2020 --module ES2020
+  rm tmp_build/bundler/index.ts
+else
+  echo "Skipping bundler target TS compilation"
+fi
 
 # Compile geodesy.ts for Node
-sed 's/@geodesy-wasm/\.\/geodesy-wasm.js/g' js/geodesy.ts > tmp_build/node/index.ts
-yarn tsc tmp_build/node/index.ts --outDir tmp_build/node --declaration --declarationDir tmp_build/node --target es2020 --module CommonJS
-rm tmp_build/node/index.ts
+if [ -z "${TARGET+x}" ] || [ "$TARGET" == "node" ]; then
+  sed 's/@geodesy-wasm/\.\/geodesy-wasm.js/g' js/geodesy.ts > tmp_build/node/index.ts
+  yarn tsc tmp_build/node/index.ts --outDir tmp_build/node --declaration --declarationDir tmp_build/node --target es2020 --module CommonJS
+  rm tmp_build/node/index.ts
+else
+  echo "Skipping node target TS compilation"
+fi
 
 # Copy files into pkg/
 mkdir -p pkg/{node,bundler}

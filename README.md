@@ -32,10 +32,21 @@ Contributions very much welcome!
 yarn build
 ```
 
-### 🔬 Test in Headless Browsers with `wasm-pack test`
+### 🔬 Dirty testing during alpha development
+
+Nothing fancy here, just comparing output.
+Testing during alpha development is done via a dirty node call of `test.js`
+
+- Build the project with
 
 ```sh
-wasm-pack test --headless --chrome
+TARGET=node ENV=debug npm run build
+```
+
+- Run the test script with
+
+```sh
+node ./test.js
 ```
 
 ### 🔧 Developing the JS wrapper

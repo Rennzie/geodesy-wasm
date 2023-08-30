@@ -1,5 +1,6 @@
-use geodesy_rs::context_authoring::{Context, OpConstructor, BUILTIN_ADAPTORS};
-use geodesy_rs::operator_authoring::{Grid, Op, ParsedParameters};
+use crate::error::Result as GWResult;
+use geodesy_rs::authoring::{Context, OpConstructor, BUILTIN_ADAPTORS};
+use geodesy_rs::authoring::{Grid, Op, ParsedParameters};
 use geodesy_rs::prelude::*;
 use geodesy_rs::Error as RgError;
 use std::collections::BTreeMap;
@@ -18,15 +19,16 @@ pub struct WasmContext {
     /// Instantiations of operators
     operators: BTreeMap<OpHandle, Op>,
     /// DataViews for external resources like grids
-    data_views: BTreeMap<String, Vec<u8>>,
+    blobs: BTreeMap<String, Vec<u8>>,
 }
 
 const BAD_ID_MESSAGE: RgError = RgError::General("WasmContext: Unknown operator id");
 
 impl WasmContext {
-    pub fn set_blob(&mut self, _key: &str, _data_view: js_sys::DataView) {
-        // TODO: Parse dataviews to Vec<u8>
-        todo!()
+    pub fn set_blob(&mut self, key: &str, blob: Vec<u8>) -> GWResult<()> {
+        self.blobs.insert(key.to_string(), blob);
+
+        Ok(())
     }
 }
 
@@ -118,8 +120,9 @@ impl Context for WasmContext {
         // We can't use the file system in wasm so we must pre-parse data to `Vec<u8>` in `set_blob`
         // ready to be consumed here.
 
-        // TODO: Should probably consume the resource otherwise we double the memory usage
-        if let Some(resource) = self.data_views.get(name) {
+        // TODO: We should `remove` the resouce otherwise we're doubling the memory
+        // We'll need the `Context` trait to allow `get_blob(&mut self, name: &str) -> Result<Vec<u8>, RgError>`
+        if let Some(resource) = self.blobs.get(name) {
             return Ok(resource.to_owned());
         }
 
