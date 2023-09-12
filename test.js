@@ -78,8 +78,6 @@ console.log('Round trip');
 const roundTripWithout =
   bngTo3857WithoutGridshiftCtx.roundTrip(bngControlCoords);
 logCoordinates(roundTripWithout);
-console.log('Diff round trip');
-logCoordDiff(roundTripWithout, bngControlCoords);
 
 bngTo3857WithoutGridshiftCtx.ctx.free();
 // ------ Gridshift testing ------
@@ -123,8 +121,6 @@ logCoordDiff(display, expectedWithGsb);
 console.log('Round trip');
 const roundTrip = bngTo3857WithGridshiftCtx.roundTrip(bngControlCoords);
 logCoordinates(roundTrip);
-console.log('Diff round trip');
-logCoordDiff(roundTrip, bngControlCoords);
 
 // ------ Gridshift testing Snake grid ------
 // console.log('\n');
