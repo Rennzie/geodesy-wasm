@@ -33,7 +33,9 @@ export class Geodesy {
 
   /**
    * Transform an array of coordinates in the forward direction of the specified definition.
-   * @param coordinates - Coordinates can be 2D or 3D and are ordered [east, north, up] or [lon, lat, h]. Note, if inputs are angular they MUST be in radians.
+   * @param coordinates - Coordinates can be 2D or 3D and are ordered [east, north, up] or [lon, lat, h].
+   *      Note, if inputs are angular they MUST be in radians.
+   *      Dimensionality of the coordinates must be consistent.
    * @returns
    */
   public forward(coordinates: number[][]): number[][] {
@@ -48,7 +50,9 @@ export class Geodesy {
 
   /**
    * Transform an array of coordinates in the inverse direction of the specified definition.
-   * @param coordinates - Coordinates can be 2D or 3D and are ordered [east, north, up] or [lon, lat, h]. Note, if inputs are angular they MUST be in radians.
+   * @param coordinates - Coordinates can be 2D or 3D and are ordered [east, north, up] or [lon, lat, h].
+   *      Note, if inputs are angular they MUST be in radians.
+   *      Dimensionality of the coordinates must be consistent.
    * @returns
    */
   public inverse(coordinates: number[][]): number[][] {
@@ -64,7 +68,9 @@ export class Geodesy {
   /**
    * Returns the difference between input and the result of a roundtrip transformation.
    * A helper method primarily used for testing.
-   * @param coordinates - Coordinates can be 2D or 3D and are ordered [east, north, up] or [lon, lat, h]. Note, if inputs are angular they MUST be in radians.
+   * @param coordinates - Coordinates can be 2D or 3D and are ordered [east, north, up] or [lon, lat, h].
+   *      Note, if inputs are angular they MUST be in radians.
+   *      Dimensionality of the coordinates must be consistent.
    * @param diff - If true, return the difference between input and output. If false, return the output.
    * @returns
    */
@@ -102,15 +108,34 @@ function prepareCoordinates(
 function getCoordinateDimensions(
   coords: number[][],
 ): GeodesyWasm.CoordDimension {
-  const dimensions = coords[0].length;
-  if (dimensions === 2) {
-    return GeodesyWasm.CoordDimension.Two;
-  } else if (dimensions === 3) {
-    return GeodesyWasm.CoordDimension.Three;
+  const firstCoordLength = coords[0].length;
+  let dimensions: GeodesyWasm.CoordDimension;
+  if (firstCoordLength === 2) {
+    dimensions = GeodesyWasm.CoordDimension.Two;
+  } else if (firstCoordLength === 3) {
+    dimensions = GeodesyWasm.CoordDimension.Three;
   } else {
     throw new Error(
-      `Invalid coordinate dimensions: ${dimensions}. Coordinates must be 2D or 3D`,
+      `Invalid coordinate dimensions: ${firstCoordLength}. Coordinates must be 2D or 3D`,
     );
+  }
+
+  dimensionsAreConsistent(coords, dimensions);
+
+  return dimensions;
+}
+
+function dimensionsAreConsistent(
+  coords: number[][],
+  dimensions: GeodesyWasm.CoordDimension,
+): void {
+  const dim = dimensions === GeodesyWasm.CoordDimension.Two ? 2 : 3;
+  for (const coord of coords) {
+    if (coord.length !== dim) {
+      throw new Error(
+        `Coordinate dimensions are not consistent. Expected ${dim}, got ${coord.length}`,
+      );
+    }
   }
 }
 

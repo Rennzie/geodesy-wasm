@@ -2,22 +2,24 @@
   "compilerOptions": {
     /* Visit https://aka.ms/tsconfig to read more about this file */
 
+    // add Bun type definitions
+    "types": ["bun-types"],
+
     /* Language and Environment */
-    "target": "ES2022" /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */,
+    "target": "ESNext" /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */,
 
     /* Modules */
     "module": "NodeNext" /* Specify what module code is generated. */,
+    "moduleResolution": "NodeNext",
     "rootDir": "./" /* Specify the root folder within your source files. */,
     "baseUrl": "./",
     "paths": {
       "@geodesy-wasm": ["./pkg-js-dev"]
     },
-    "forceConsistentCasingInFileNames": true /* Ensure that casing is correct in imports. */,
 
-    /* Type Checking */
+    /* Best Practices */
     "strict": true /* Enable all strict type-checking options. */,
-
-    /* Completeness */
+    "forceConsistentCasingInFileNames": true /* Ensure that casing is correct in imports. */,
     "skipLibCheck": true /* Skip type checking all .d.ts files. */
   }
 }
