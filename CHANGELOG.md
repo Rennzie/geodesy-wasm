@@ -24,5 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for NTv2 Grids [#2](https://github.com/Rennzie/geodesy-wasm/issues/2) via Geodesy [branch](https://github.com/busstoptaktik/geodesy/pull/60)
 - The ability to supply a gridshift file via `RawGrids` struct [#2](https://github.com/Rennzie/geodesy-wasm/issues/2)
 - Update the README with usage examples and better documentation [#9](https://github.com/Rennzie/geodesy-wasm/issues/9)
+- Add tests for the wrapper [#10](https://github.com/Rennzie/geodesy-wasm/issues/10)
+  - Replaced yarn with [bun](https://bun.sh/docs/cli/test) in the process
 
 [unreleased]:

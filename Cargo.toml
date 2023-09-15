@@ -4,6 +4,8 @@ version = "0.2.0--alpha1"
 keywords = ["geospatial", "geodesy", "cartography", "geography"]
 categories = ["science"]
 authors = ["Sean Rennie <sean.rennie@sensat.co.uk>"]
+description = "A WASM wrapper around the Rust Geodesy crate"
+repository = "https://github.com/Rennzie/geodesy-wasm"
 license = "MIT OR Apache-2.0"
 edition = "2021"
 
