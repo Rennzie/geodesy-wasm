@@ -19,7 +19,7 @@ _Note: Please see the [warnings](https://github.com/busstoptaktik/geodesy?tab=re
 3. [x] Proj string to geodesy_rs parser so that proj strings can be used with geodesy_wasm - completed by @busstoptaktik in the geodesy crate
 4. [x] NTv2 support
    1. Being added in the geodesy crate [here](https://github.com/busstoptaktik/geodesy/pull/60) but is already being used in geodesy-wasm in place of gravsoft grid support.
-5. [ ] Usage guide and examples
+5. [x] Usage guide and examples
 6. [ ] Documentation
 7. [ ] Publish v1.0.0
 

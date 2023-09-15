@@ -3,13 +3,14 @@
   "license": "(Apache-2.0 OR MIT)",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build:wrapper-dev": "wasm-pack build --target web --dev --out-dir pkg-js-dev",
+    "build:wrapper-dev": "wasm-pack build --target nodejs --dev --out-dir pkg-js-dev",
     "build": "bash ./scripts/build.sh",
     "publish": "cd pkg && npm publish --access public"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^6.3.0",
     "@typescript-eslint/parser": "^6.3.0",
+    "bun-types": "^1.0.1",
     "eslint": "^8.46.0",
     "eslint-config-prettier": "^9.0.0",
     "prettier": "^3.0.1",

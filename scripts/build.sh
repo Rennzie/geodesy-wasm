@@ -47,7 +47,7 @@ fi
 # Compile geodesy.ts for bundler
 if [ -z "${TARGET+x}" ] || [ "$TARGET" == "bundler" ]; then
   sed 's/@geodesy-wasm/\.\/geodesy-wasm.js/g' js/geodesy.ts > tmp_build/bundler/index.ts
-  yarn tsc tmp_build/bundler/index.ts --outDir tmp_build/bundler --declaration --declarationDir tmp_build/bundler --target es2020 --module ES2020
+  bun tsc tmp_build/bundler/index.ts --outDir tmp_build/bundler --declaration --declarationDir tmp_build/bundler --target es2020 --module ES2020
   rm tmp_build/bundler/index.ts
 else
   echo "Skipping bundler target TS compilation"
@@ -56,7 +56,7 @@ fi
 # Compile geodesy.ts for Node
 if [ -z "${TARGET+x}" ] || [ "$TARGET" == "node" ]; then
   sed 's/@geodesy-wasm/\.\/geodesy-wasm.js/g' js/geodesy.ts > tmp_build/node/index.ts
-  yarn tsc tmp_build/node/index.ts --outDir tmp_build/node --declaration --declarationDir tmp_build/node --target es2020 --module CommonJS
+  bun tsc tmp_build/node/index.ts --outDir tmp_build/node --declaration --declarationDir tmp_build/node --target es2020 --module CommonJS
   rm tmp_build/node/index.ts
 else
   echo "Skipping node target TS compilation"
