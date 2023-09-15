@@ -211,6 +211,8 @@ TARGET=node ENV=debug npm run build
 node ./test.js
 ```
 
+---
+
 ## License
 
 Geodesy-Wasm: Copyright (c) 2023 by Sean Rennie.
