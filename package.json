@@ -2,7 +2,7 @@
   "main": "./geodesy.ts",
   "license": "(Apache-2.0 OR MIT)",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:wrapper": "bun test  --coverage",
     "build:wrapper-dev": "wasm-pack build --target nodejs --dev --out-dir pkg-js-dev",
     "build": "bash ./scripts/build.sh",
     "publish": "cd pkg && npm publish --access public"

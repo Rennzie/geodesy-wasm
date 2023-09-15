@@ -170,25 +170,27 @@ console.log(resultFwd);
 
 ## Development
 
-For convenience all scripts can be run with `yarn <script>`. Make sure all the javascript related dependencies are installed with `yarn install`. Rust dependencies are managed by [cargo](https://doc.rust-lang.org/cargo/) and don't require and explicit install step.
+For convenience all scripts can be run with `bun <script>`. Make sure all the javascript related dependencies are installed with `bun install`. Rust dependencies are managed by [cargo](https://doc.rust-lang.org/cargo/) and don't require and explicit install step.
 
 ### 🛠️ Build the bindings
 
 ```sh
-yarn build
+bun build
 
 # Or for a specific target run. Only `node` and `bundler` targets are supported
-TARGET=node ENV=debug yarn build
+TARGET=node ENV=debug bun build
 ```
 
 ### 🔧 Developing the JS wrapper
 
 The wrapper is intended to abstract some of the complexities of using a wasm library - like dealing with pointers and managing WASM memory. It's also written to provide a more familiar API for JS developers - see [examples](#📝-examples).
 
+**Note: This project uses [Bun](https://bun.sh/) for building and testing of the Javascript wrapper. Follow the instructions on the website to install it.**
+
 To develop the wrapper you must first build the wasm bindings:
 
 ```sh
-yarn build:wrapper-dev
+bun build:wrapper-dev
 ```
 
 This will ensure that you get all the linting goodness from typescript while making changes to the wrapper.
@@ -197,18 +199,40 @@ Todo: tests etc
 
 ### 🔬 Testing during alpha development
 
-Nothing fancy here, just comparing output.
+#### Wasm bindings
+
+Written in rust so we use cargo
+
+```bash
+cargo test
+```
+
+#### JS wrapper
+
+First we need to build the bindings:
+
+```sh
+bun build:wrapper-dev
+```
+
+Then we can run the tests:
+
+```sh
+bun test:wrapper-dev
+```
+
+During alhpa and beta dev there is a scrappy script in `test.js` for quickly iterating on the wrapper and debugging the bindings.
 
 - Build the project with
 
 ```sh
-TARGET=node ENV=debug npm run build
+TARGET=node ENV=DEV bun run build
 ```
 
 - Run the test script with
 
 ```sh
-node ./test.js
+bun ./test.js
 ```
 
 ---

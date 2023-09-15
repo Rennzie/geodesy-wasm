@@ -8,7 +8,7 @@ mkdir -p tmp_build
 if [ "$ENV" == "DEV" ]; then
   echo "Building debug version"
    BUILD="--dev"
-   FLAGS="--features debug"
+  #  FLAGS="--features debug"
 else
   echo "Building release version"
    BUILD="--release"
