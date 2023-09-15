@@ -23,8 +23,7 @@ impl RawGrids {
     /// as the grid=<key> parameter in the definition string.
     ///
     /// Supported Grid Types:
-    ///
-    ///     - NTv2 (gsb)
+    ///     - `NTv2` (.gsb)
     #[wasm_bindgen]
     pub fn add(&mut self, key: &str, data_view: DataView) -> WasmResult<()> {
         let mut result = Vec::with_capacity(data_view.byte_length() as usize);
