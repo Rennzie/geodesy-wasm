@@ -61,14 +61,24 @@ export class Geodesy {
     return unflattenCoords(resArray, dimensions);
   }
 
-  public roundTrip(coordinates: number[][]): number[][] {
+  /**
+   * Returns the difference between input and the result of a roundtrip transformation.
+   * A helper method primarily used for testing.
+   * @param coordinates - Coordinates can be 2D or 3D and are ordered [east, north, up] or [lon, lat, h]. Note, if inputs are angular they MUST be in radians.
+   * @param diff - If true, return the difference between input and output. If false, return the output.
+   * @returns
+   */
+  public roundTrip(coordinates: number[][], diff = true): number[][] {
     const [coordBufPtr, dimensions] = prepareCoordinates(coordinates);
     this.ctx.roundTrip(coordBufPtr);
 
-    // toArray() cleans ups the WASM memory so we don't need to call free() on the coordBufPtr
-    const resArray = coordBufPtr.toArray();
+    const outputCoords = unflattenCoords(coordBufPtr.toArray(), dimensions);
+    // diff input and output
+    const diffedCoords = coordinates.map((coord, i) =>
+      coord.map((val, j) => val - outputCoords[i][j]),
+    );
 
-    return unflattenCoords(resArray, dimensions);
+    return diff ? diffedCoords : outputCoords;
   }
 }
 
