@@ -3,6 +3,7 @@
  * - Will be removed in favour of actual tests once the library is stable.
  */
 const {GeodesyWasm, Geodesy} = require('./pkg/node/index');
+const fs = require('fs');
 GeodesyWasm.set_panic_hook();
 GeodesyWasm.init_console_logger();
 
@@ -65,21 +66,21 @@ const bngTo3857WithoutGridshift = `
 //       +y_0=-100000 +ellps=airy
 // +step +proj=webmerc +lat_0=0 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84
 
-const bngTo3857WithoutGridshiftCtx = new Geodesy(bngTo3857WithoutGridshift);
-const withoutGridshiftResult =
-  bngTo3857WithoutGridshiftCtx.forward(bngControlCoords);
+// const bngTo3857WithoutGridshiftCtx = new Geodesy(bngTo3857WithoutGridshift);
+// const withoutGridshiftResult =
+//   bngTo3857WithoutGridshiftCtx.forward(bngControlCoords);
 
-console.log('Converted Coords');
-logCoordinates(withoutGridshiftResult);
-console.log('Diff Expected Coords');
-logCoordDiff(withoutGridshiftResult, expectedWithoutGsb);
+// console.log('Converted Coords');
+// logCoordinates(withoutGridshiftResult);
+// console.log('Diff Expected Coords');
+// logCoordDiff(withoutGridshiftResult, expectedWithoutGsb);
 
-console.log('Round trip');
-const roundTripWithout =
-  bngTo3857WithoutGridshiftCtx.roundTrip(bngControlCoords);
-logCoordinates(roundTripWithout);
+// console.log('Round trip');
+// const roundTripWithout =
+//   bngTo3857WithoutGridshiftCtx.roundTrip(bngControlCoords);
+// logCoordinates(roundTripWithout);
 
-bngTo3857WithoutGridshiftCtx.ctx.free();
+// bngTo3857WithoutGridshiftCtx.ctx.free();
 // ------ Gridshift testing ------
 
 console.log('\n');
@@ -102,8 +103,9 @@ const bngTo3857WithGridshift = `
   +step +proj=webmerc +lat_0=0 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84
   `;
 
-const fs = require('fs');
-const gridShiftFile = fs.readFileSync('./OSTN15_NTv2_OSGBtoETRS.gsb');
+const gridShiftFile = fs.readFileSync(
+  '/Users/sean/Documents/Project-test-data/gridshifts/OSTN15_NTv2_OSGBtoETRS.gsb',
+);
 const dataView = new DataView(gridShiftFile.buffer);
 
 const bngTo3857WithGridshiftCtx = new Geodesy(bngTo3857WithGridshift, {
@@ -170,11 +172,12 @@ const RAD_TO_DEG = 180 / Math.PI;
 const controlPoint = [355436.5844194045, 187050.05227720237]; //.map(v => v * DEG_TO_RAD);
 
 const irf = [-3.4892308415257496, 50.57363537406664].map(v => v * DEG_TO_RAD);
+const shifted_deg = [-3.4697375201312886, 50.56721112908722];
 
 const definition = `+proj=pipeline
++step +inv +proj=lcc +lat_0=50.85 +lon_0=-3.25 +lat_1=50.3 +lat_2=51.45 +x_0=372382.8292 +y_0=217764.7796 +ellps=GRS80 +units=m
 +step +inv +proj=gridshift +ellps=GRS80 +grids=TN15-ETRS89-to-RBEPP12-IRF.gsb
 `;
-// +step +inv +proj=lcc +lat_0=50.85 +lon_0=-3.25 +lat_1=50.3 +lat_2=51.45 +x_0=372382.8292 +y_0=217764.7796 +ellps=GRS80 +units=m
 // +step +proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +no_defs
 
 const newGsbFile = fs.readFileSync(
@@ -187,9 +190,9 @@ const ctx = new Geodesy(definition, {
   'TN15-ETRS89-to-RBEPP12-IRF.gsb': newDataView,
 });
 
-const result = ctx.forward([irf]);
-logCoordinates(result.map(o => o.map(v => v * RAD_TO_DEG)));
-
+const result = ctx.forward([controlPoint]).map(o => o.map(v => v * RAD_TO_DEG));
+logCoordinates(result);
+logCoordDiff(result, [shifted_deg]);
 // `proj=pipeline
 //     step inv proj=lcc lat_0=50.85 lon_0=-3.25 lat_1=50.3 lat_2=51.45 x_0=372382.8292 y_0=217764.7796 ellps=GRS80 units=m no_defs type=crs
 //     step proj=longlat ellps=GRS80 nadgrids=/Users/sean/Documents/Project-test-data/gridshifts/TN15-ETRS89-to-RBEPP12-IRF.gsb no_defs
