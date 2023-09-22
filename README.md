@@ -35,137 +35,11 @@ npm install geodesy-wasm
 
 ### 📝 Examples
 
-#### Basic Usage
+See the [examples](./examples) folder for more examples.
+They can be run with `bun run examples -n <example name (excluding extension)>`.
 
-```js
-import {Geodesy} from 'geodesy-wasm';
-
-const definition = 'utm zone=32';
-
-// Control coordinates in Degrees
-let copenhagen = [55.0, 12.0];
-
-// We're working with angular coordinates which MUST be convert to radians first.
-copenhagen = copenhagen.map(x => x * (Math.PI / 180));
-
-// Create a context for the given definition
-const ctx = new Geodesy(definition);
-
-// Geodesy expects an array of coordinates
-const result = ctx.forward([copenhagen]);
-
-console.log(result);
-// [[ 6080642.1129675 1886936.9691340544 ]]
-
-// And the inverse
-const resultInv = ctx.inverse(result);
-
-// The result is in radians which we'd need to convert back to degrees
-console.log(resultInv);
-// [[ 0.9599310885968819 0.2094395102393213 ]]
-
-// 3D coordinates are also supported
-const result3D = ctx.forward([[copenhagen[0], copenhagen[1], 100]]);
-console.log(result3D);
-// [[ 6080642.1129675, 1886936.9691340544, 100 ]]
-```
-
-#### Using a PROJ string
-
-Geodesy wasm includes a [parser](https://github.com/busstoptaktik/geodesy/blob/c1c604c298bea4a80a5ce43276a3816898a10038/src/token/mod.rs#L169) to convert PROJ strings to its native format. However users must be aware of the [operator](https://github.com/busstoptaktik/geodesy/blob/main/ruminations/002-rumination.md) limitations of Rust Geodesy. It is not battle hardened and small differences like only using a `k` in the `tmerc` instead of `k_0` will result in incorrect transforms.
-
-```js
-import {Geodesy} from 'geodesy-wasm';
-const definition = '+proj=utm +zone=32';
-
-// Control coordinates in Degrees
-let copenhagen = [55.0, 12.0];
-// We're working with angular coordinates as input so we MUST convert to radians first.
-copenhagen = copenhagen.map(x => x * (Math.PI / 180));
-
-// Create a context for the given definition
-const ctx = new Geodesy(definition);
-
-// Geodesy expects and array of coordinates so we wrap our single point in an array
-const result = ctx.forward([copenhagen]);
-
-console.log(result);
-// [ [ 6080642.1129675 1886936.9691340544 ] ]
-```
-
-#### Using a pipeline
-
-```js
-import {Geodesy} from 'geodesy-wasm';
-
-const controlsCoordinates = [
-  [13186.3825, 6837121.6345, 9.61],
-  [13189.9031, 6837110.8322, 9.61],
-];
-
-// A pipeline using PROJ syntax converting BNG coordinates to Webmercator
-const definition = `
-+proj=pipeline
-  +step +inv +proj=tmerc +lat_0=49 +lon_0=-2 +k_0=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy
-  +step +proj=webmerc +lat_0=0 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84
-  `;
-
-const ctx = new Geodesy(definition);
-const resultFwd = ctx.forward(controlsCoordinates);
-
-console.log(resultFwd);
-// [[ 13186.38247766841 6837121.634523826 9.61 ], [ 13189.903112418948 6837110.83220927 9.61 ]],
-
-// For testing a `roundTrip` method is provided
-const resultRoundTrip = ctx.roundTrip(controlsCoordinates);
-
-for (let i = 0; i < resultRoundTrip.length; i++) {
-  for (let j = 0; j < resultRoundTrip[i].length; j++) {
-    console.assert(resultRoundTrip[i][j] === 0 + Math.E);
-  }
-}
-```
-
-#### Using a gridshift file
-
-Currently only NTv2 (`.gsb`) grids are supported.
-
-_Note: Natively Rust Geodesy only supports gravsoft grids however Geodesy Wasm uses a [branch](https://github.com/busstoptaktik/geodesy/pull/60) where NTv2 support is being considered. Hopefully in the near future both formats and more will be supported natively in Rust Geodesy_
-
-```js
-import {Geodesy} from 'geodesy-wasm';
-
-// In some web environment using a component.
-
-// We need a gridshift as a Dataview before building the context
-const buffer = await fetch('<some-CDN-url>/OSTN15_NTv2_OSGBtoETRS.gsb').then(
-  res => res.arrayBuffer(),
-);
-const dataView = new DataView(buf);
-
-const controlsCoordinates = [
-  [13186.3825, 6837121.6345, 9.61],
-  [13189.9031, 6837110.8322, 9.61],
-];
-
-// NOTE: We need to modify the gridshift step to work with Rust Geodesy
-// `+proj=hgridshift` is replaced by `+proj=gridshift`
-const definition = `
-  +proj=pipeline
-    +step +inv +proj=tmerc +lat_0=49 +lon_0=-2 +k_0=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy
-    +step +proj=gridshift +grids=OSTN15_NTv2_OSGBtoETRS.gsb
-    +step +proj=webmerc +lat_0=0 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84
-    `;
-
-// From here everything is the same as the pipeline example
-const ctx = new Geodesy(bngTo3857WithGridshift, {
-  'OSTN15_NTv2_OSGBtoETRS.gsb': dataView,
-});
-
-const resultFwd = ctx.forward(controlsCoordinates);
-
-console.log(resultFwd);
-// [[ 13004.309008754391 6837202.757094237 9.61 ], [ 13007.829360281388 6837191.955741842 9.61 ]]
+```bash
+bun run examples -n 00-basic
 ```
 
 ## Development
@@ -197,7 +71,7 @@ This will ensure that you get all the linting goodness from typescript while mak
 
 Todo: tests etc
 
-### 🔬 Testing during alpha development
+### 🔬 Testing
 
 #### Wasm bindings
 
@@ -219,20 +93,6 @@ Then we can run the tests:
 
 ```sh
 bun test:wrapper-dev
-```
-
-During alhpa and beta dev there is a scrappy script in `test.js` for quickly iterating on the wrapper and debugging the bindings.
-
-- Build the project with
-
-```sh
-TARGET=node ENV=DEV bun run build
-```
-
-- Run the test script with
-
-```sh
-bun ./test.js
 ```
 
 ---
