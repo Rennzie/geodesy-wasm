@@ -8,7 +8,7 @@ const geodesyRsLink = `${'\u001b]8;;https://github.com/busstoptaktik/geodesy/blo
 function main() {
   log.white(`
    ==================================
-      00 - Basic Transformations  *
+      00 - Basic Transformations
    ==================================
    This example tries to replicate that of Rust Geodesy  ${geodesyRsLink} example in a geodesy-wasm native way.
   `);

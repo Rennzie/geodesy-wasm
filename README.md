@@ -38,8 +38,16 @@ npm install geodesy-wasm
 See the [examples](./examples) folder for more examples.
 They can be run with `bun run examples -n <example name (excluding extension)>`.
 
+The examples are written to be run with Node or Bun, however with the exception of loading a gridshift they will translate directly to the browser.
+
 ```bash
 bun run examples -n 00-basic
+```
+
+You can also run them directly with `ts-node`:
+
+```bash
+ts-node examples/js/00-basic.ts
 ```
 
 ## Development
