@@ -1,6 +1,6 @@
 [package]
 name = "geodesy-wasm"
-version = "0.2.0--alpha1"
+version = "0.2.0-beta2"
 keywords = ["geospatial", "geodesy", "cartography", "geography"]
 categories = ["science"]
 authors = ["Sean Rennie <sean.rennie@sensat.co.uk>"]
