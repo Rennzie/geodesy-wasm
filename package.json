@@ -5,7 +5,8 @@
     "test:wrapper": "bun test  --coverage",
     "build:wrapper-dev": "wasm-pack build --target nodejs --dev --out-dir pkg-js-dev",
     "build": "bash ./scripts/build.sh",
-    "publish": "cd pkg && npm publish --access public"
+    "publish": "cd pkg && npm publish --access public",
+    "examples": "bun run ./examples/js/run.ts"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^6.3.0",
@@ -15,5 +16,8 @@
     "eslint-config-prettier": "^9.0.0",
     "prettier": "^3.0.1",
     "typescript": "^5.1.6"
+  },
+  "dependencies": {
+    "commander": "^11.0.0"
   }
 }
