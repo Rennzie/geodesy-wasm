@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security - in case of vulnerabilities.
 -->
 
-## [Unreleased]
+## [0.2.0] - 2021-10-21
 
 - Move test.js to examples folder [#18](https://github.com/Rennzie/geodesy-wasm/issues/18)
   - Added 00-basic examples
