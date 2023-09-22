@@ -168,6 +168,10 @@ console.log(resultFwd);
 // [[ 13004.309008754391 6837202.757094237 9.61 ], [ 13007.829360281388 6837191.955741842 9.61 ]]
 ```
 
+#### Using ESM Modules in ObservableHQ
+
+See [this notebook](https://observablehq.com/d/3ff9d9b8f0b5168a) for an example of using Geodesy-Wasm in ObservableHQ.
+
 ## Development
 
 For convenience all scripts can be run with `bun <script>`. Make sure all the javascript related dependencies are installed with `bun install`. Rust dependencies are managed by [cargo](https://doc.rust-lang.org/cargo/) and don't require and explicit install step.
