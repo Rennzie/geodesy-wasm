@@ -30,8 +30,8 @@ impl CoordBuffer {
     pub fn into_array(self) -> js_sys::Float64Array {
         let array = js_sys::Float64Array::new_with_length(self.0.buffer.len() as u32);
 
-        for (i, v) in self.0.buffer.iter().enumerate() {
-            array.set_index(i as u32, *v);
+        for (i, v) in self.0.buffer.into_iter().enumerate() {
+            array.set_index(i as u32, v);
         }
 
         array

@@ -97,10 +97,7 @@ function prepareCoordinates(
   const flatCoords = flattenCoords(coordinates);
 
   // Move the coordinates into WASM memory
-  const coordBufPtr = new GeodesyWasm.CoordBuffer(
-    new Float64Array(flatCoords),
-    dimensions,
-  );
+  const coordBufPtr = new GeodesyWasm.CoordBuffer(flatCoords, dimensions);
 
   return [coordBufPtr, dimensions];
 }
@@ -139,8 +136,20 @@ function dimensionsAreConsistent(
   }
 }
 
-function flattenCoords(coords: number[][]): number[] {
-  return coords.reduce((acc, val) => acc.concat(val), []);
+function flattenCoords(coords: number[][]): Float64Array {
+  const dimension = coords[0].length;
+  const res = new Float64Array(coords.length * dimension);
+
+  // Fastest way to flatten an array while creating a Float64Array
+  // It's faster than using Float64Array.set() because it avoids the overhead of
+  // creating a new Float64Array each item.
+  let index = 0;
+  for (let i = 0; i < coords.length; i++) {
+    for (let j = 0; j < dimension; j++) {
+      res[index++] = coords[i][j];
+    }
+  }
+  return res;
 }
 
 function unflattenCoords(
@@ -148,9 +157,17 @@ function unflattenCoords(
   dimensions: GeodesyWasm.CoordDimension,
 ): number[][] {
   const dim = dimensions === GeodesyWasm.CoordDimension.Two ? 2 : 3;
+
+  // This is the fastest way to unflatten an array.
+  // It's faster than using Array.from(coords.subarray(i, i + dim)) because it avoids the overhead of
+  // creating a new a Float64Array on each item and calling subarray on it.
   const res: number[][] = [];
   for (let i = 0; i < coords.length; i += dim) {
-    res.push(Array.from(coords.subarray(i, i + dim)));
+    const row: number[] = [];
+    for (let j = 0; j < dim; j++) {
+      row.push(coords[i + j]);
+    }
+    res.push(row);
   }
   return res;
 }
