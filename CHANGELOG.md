@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Move test.js to examples folder [#18](https://github.com/Rennzie/geodesy-wasm/issues/18)
+  - Added 00-basic examples
+  - Added 01-gridshift examples
+- Expose `parse_proj` function to wasm.
+
 ## [0.2.0-beta2] - 2021-10-20
 
 ### Added
