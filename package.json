@@ -5,7 +5,7 @@
     "test:wrapper": "bun test  --coverage",
     "build:wrapper-dev": "wasm-pack build --target nodejs --dev --out-dir pkg-js-dev",
     "build": "bash ./scripts/build.sh",
-    "publish": "cd pkg && npm publish --access public",
+    "publish": "bun run build && cd pkg && npm publish --access public",
     "examples": "bun run ./examples/js/run.ts"
   },
   "devDependencies": {
