@@ -6,3 +6,4 @@ pkg/
 pkg-js-dev/
 wasm-pack.log
 node_modules
+tmp
