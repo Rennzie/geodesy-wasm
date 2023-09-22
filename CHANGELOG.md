@@ -21,6 +21,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added 01-gridshift examples
 - Expose `parse_proj` function to wasm.
 
+## [0.2.0-beta2] - 2021-10-20
+
+### Added
+
+- ESM Build [#16](https://github.com/Rennzie/geodesy-wasm/issues/16)
+- Example usage in ObservableHQ
+
+## [0.2.0-beta1] - 2021-10-20
+
 ### Added
 
 - This CHANGELOG file
@@ -31,5 +40,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update the README with usage examples and better documentation [#9](https://github.com/Rennzie/geodesy-wasm/issues/9)
 - Add tests for the wrapper [#10](https://github.com/Rennzie/geodesy-wasm/issues/10)
   - Replaced yarn with [bun](https://bun.sh/docs/cli/test) in the process
-
-[unreleased]:
