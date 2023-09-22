@@ -67,6 +67,8 @@ function main() {
   log.yellow('Round Trip:');
   logCoordinates(roundTrip);
 
+  // I've not entirely worked out how to free the wasm memory when we don't need the context any more.
+  // Below is a hack to do that if you want to avoid leaking wasm memory.
   ctx['ctx'].free();
 
   log.blue('----- -------------------------------------- -----');
