@@ -145,7 +145,11 @@ function main() {
   log.green('\nDiff PROJ string vs Rust Geodesy String:');
   logCoordDiff(nordicsEd30Rg, nordicsEd30Proj);
 
-  // For convenience `geodesy-wasm` re-exports the Rust Geodesy parse_proj function.
+  // Geodesy wasm includes a [parser](https://github.com/busstoptaktik/geodesy/blob/c1c604c298bea4a80a5ce43276a3816898a10038/src/token/mod.rs#L169)
+  // to convert PROJ strings to its native format which is re-exported by geodesy-wasm here.
+  // However users must be aware of the [operator](https://github.com/busstoptaktik/geodesy/blob/main/ruminations/002-rumination.md) limitations of Rust Geodesy.
+  // It is not battle hardened and small differences like only using a `k` in the `tmerc` instead of `k_0` will result in incorrect transforms.
+
   const parsed = GeodesyWasm.parseProj(pipeline);
   log.blue('\nParsed PROJ string:');
   log.yellow(parsed);
