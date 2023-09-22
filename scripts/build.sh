@@ -42,6 +42,19 @@ else
   echo "Skipping bundler target"
 fi
 
+# Build esm version into tmp_build/esm
+if [ -z "${TARGET+x}" ] || [ "$TARGET" == "esm" ]; then
+  echo "Building esm target"
+  wasm-pack build \
+    $BUILD \
+    --out-dir tmp_build/esm \
+    --out-name geodesy-wasm \
+    --target web \
+    $FLAGS
+else
+  echo "Skipping esm target"
+fi
+
 # Compile JS Wrapper
 
 # Compile geodesy.ts for bundler
@@ -62,16 +75,31 @@ else
   echo "Skipping node target TS compilation"
 fi
 
+# Compile geodesy.ts for Node
+if [ -z "${TARGET+x}" ] || [ "$TARGET" == "esm" ]; then
+  sed 's/@geodesy-wasm/\.\/geodesy-wasm.js/g' js/geodesy.ts > tmp_build/esm/index.ts
+  bun tsc tmp_build/esm/index.ts --outDir tmp_build/esm --declaration --declarationDir tmp_build/esm --target es2020 --module ESNEXT
+  rm tmp_build/esm/index.ts
+else
+  echo "Skipping esm target TS compilation"
+fi
+
 # Copy files into pkg/
-mkdir -p pkg/{node,bundler}
+mkdir -p pkg/{node,bundler,esm}
 cp tmp_build/bundler/geodesy-wasm* pkg/bundler/
 cp tmp_build/bundler/index* pkg/bundler/
 
-cp tmp_build/node/geodesy-wasm* pkg/node
+cp tmp_build/node/geodesy-wasm* pkg/node/
 cp tmp_build/node/index* pkg/node/
+
+cp tmp_build/esm/geodesy-wasm* pkg/esm/
+cp tmp_build/esm/index* pkg/esm/
 
 cp tmp_build/bundler/{package.json,README.md} pkg/
 cp {LICENSE-MIT,LICENSE-APACHE} pkg/
+
+# Create minimal package.json in esm/ folder with type: module
+echo '{"type": "module"}' > pkg/esm/package.json
 
 # Update files array in package.json using JQ
 # Set module field to bundler/geodesy-wasm.js
