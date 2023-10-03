@@ -5,6 +5,8 @@ use geodesy_rs::prelude::*;
 use geodesy_rs::Error as RgError;
 use std::collections::BTreeMap;
 
+use super::operators::ACCESSORY_OPERATORS;
+
 // ----- T H E   W A S M  C T X   P R O V I D E R ---------------------------------
 // Modified from Rust Geodesy Minimal context to work with web inputs.
 // Changes:
@@ -35,8 +37,14 @@ impl WasmContext {
 impl Context for WasmContext {
     fn new() -> WasmContext {
         let mut ctx = WasmContext::default();
+        // register the builtin operators defined in geodesy-rs
         for item in BUILTIN_ADAPTORS {
             ctx.register_resource(item.0, item.1);
+        }
+
+        // register the operators defined in geodesy-wasm
+        for item in ACCESSORY_OPERATORS {
+            ctx.register_op(item.0, item.1);
         }
         ctx
     }
