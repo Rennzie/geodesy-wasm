@@ -21,7 +21,11 @@ _Note: Please see the [warnings](https://github.com/busstoptaktik/geodesy?tab=re
    1. Being added in the geodesy crate [here](https://github.com/busstoptaktik/geodesy/pull/60) but is already being used in geodesy-wasm in place of gravsoft grid support.
 5. [x] Usage guide and examples
 6. [ ] Documentation
-7. [ ] Publish v1.0.0
+7. [ ] Add operators for better parity with PROJ
+   1. [x] unitconvert
+   2. [ ] hgridshift
+   3. [ ] longlat?
+   4. [ ] axisswap?
 
 Contributions very much welcome!
 
@@ -53,6 +57,26 @@ ts-node examples/js/00-basic.ts
 #### Using ESM Modules in ObservableHQ
 
 See [this notebook](https://observablehq.com/d/3ff9d9b8f0b5168a) for an example of using Geodesy-Wasm in ObservableHQ.
+
+## 📚 Documentation
+
+### Operators
+
+Geodesy wasm provides some limited operators that are not on the Rust Geodesy road map. Mostly this will be to get closer to PROJ. The operators are:
+
+#### unitconvert
+
+Used for converting horizontal and vertical units. Note, time units are not supported. See units.rs for a list of supported units.
+
+```js
+import {Geodesy} from 'geodesy-wasm';
+let ctx = new Geodesy('unitconvert xy_in=deg xy_out=rad');
+let result = ctx.forward([[1, 2]]);
+console.log(result); // [0.017453292519943295, 0.03490658503988659]
+
+let reverse = ctx.reverse(result);
+console.log(reverse); // [1, 2]
+```
 
 ## Development
 
