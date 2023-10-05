@@ -14,7 +14,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security - in case of vulnerabilities.
 -->
 
-## [0.2.0] - 2021-10-21
+## [0.3.0] - 2023-10-05
+
+### Added
+
+- `unitconvert` operator [#21](https://github.com/Rennzie/geodesy-wasm/issues/21)
+
+### Fixed
+
+- The dates in this change log. Blindly following Github Copilot is a mistake
+
+## [0.2.0] - 2023-09-23
 
 - Move test.js to examples folder [#18](https://github.com/Rennzie/geodesy-wasm/issues/18)
   - Added 00-basic examples
@@ -23,14 +33,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added performance benchmarks vs proj4.js [#11](https://github.com/Rennzie/geodesy-wasm/issues/11)
   - Improved performance to JS Wrapper code
 
-## [0.2.0-beta2] - 2021-10-20
+## [0.2.0-beta2] - 2021-09-23
 
 ### Added
 
 - ESM Build [#16](https://github.com/Rennzie/geodesy-wasm/issues/16)
 - Example usage in ObservableHQ
 
-## [0.2.0-beta1] - 2021-10-20
+## [0.2.0-beta1] - 2021-09-23
 
 ### Added
 
