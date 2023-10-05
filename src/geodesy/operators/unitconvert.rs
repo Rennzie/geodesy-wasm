@@ -6,32 +6,10 @@
 /// For horizontal conversions, the pivot unit is meters for linear units and radians for angular units.
 /// Vertical units always pivot around meters.
 /// Unit_A => (meters || radians) => Unit_B
+use super::units::{angular_units_map, linear_units_map};
 use geodesy_rs::authoring::*;
-use std::collections::HashMap;
-
-use super::units::{Unit, ANGULAR_UNITS, LINEAR_UNITS};
 
 // ----- C O M M O N -------------------------------------------------------------------
-// Returns a map of linear units and their conversion to meters.
-// # Example
-// ```
-// use geodesy_wasm::geodesy::operators::units::linear_units_map;
-// let map = linear_units_map();
-// assert_eq!(map["km"].to_meters, 1000.0);
-// ```
-pub fn linear_units_map() -> HashMap<&'static str, &'static Unit> {
-    LINEAR_UNITS
-        .iter()
-        .map(|&ref unit| (unit.name(), unit))
-        .collect()
-}
-
-pub fn angular_units_map() -> HashMap<&'static str, &'static Unit> {
-    ANGULAR_UNITS
-        .iter()
-        .map(|&ref unit| (unit.name(), unit))
-        .collect()
-}
 
 fn get_pivot_multiplier(name: &str) -> f64 {
     // First try linear units.
@@ -156,8 +134,6 @@ pub fn new(parameters: &RawParameters, _ctx: &dyn Context) -> Result<Op, Error> 
         id,
     })
 }
-
-// ----- A N C I L L A R Y   F U N C T I O N S -----------------------------------------
 
 // ----- T E S T S ---------------------------------------------------------------------
 
