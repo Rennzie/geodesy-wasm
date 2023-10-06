@@ -1,11 +1,12 @@
 use geodesy_rs::authoring::*;
 
 mod noop;
+mod somerc;
 mod unitconvert;
 pub mod units;
 
 #[rustfmt::skip]
-pub const ACCESSORY_OPERATORS: [(&str, OpConstructor); 5] = [
+pub(crate) const ACCESSORY_OPERATORS: [(&str, OpConstructor); 6] = [
   ("unitconvert", OpConstructor(unitconvert::new)),
   // As far as I can tell the `longlat` operator is a no-op.
   // - https://proj.org/en/9.3/operations/conversions/latlon.html
@@ -16,4 +17,7 @@ pub const ACCESSORY_OPERATORS: [(&str, OpConstructor); 5] = [
   ("latlon", OpConstructor(noop::new)),
   ("latlong", OpConstructor(noop::new)),
   ("lonlat", OpConstructor(noop::new)),
+
+  // Somerc should be implemented in RG but I'm adding it here until it is.
+  ("somerc", OpConstructor(somerc::new)),
 ];
