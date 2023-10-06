@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security - in case of vulnerabilities.
 -->
 
+## [Unreleased]
+
+### Added
+
+- `longlat` operator and aliases [#24](https://github.com/Rennzie/geodesy-wasm/issues/24)
+
 ## [0.3.0] - 2023-10-05
 
 ### Added
