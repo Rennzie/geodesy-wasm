@@ -1,7 +1,5 @@
-/// As far as I can tell the `longlat` operator is a no-op.
-/// - https://proj.org/en/9.3/operations/conversions/latlon.html
-/// - https://github.com/OSGeo/PROJ/blob/2040e685f5ab9c2958b7b611f5aaafee21fed82f/src/projections/latlong.cpp#L94
-///
+/// No-op operator which is the same as the RG one.
+/// Unfortunately the RG one is not exported so I've re-created it here for internal use
 /// I assume this is for legacy PROJ reasons therefore in geodesy-wasm latlong is a no-op.
 use geodesy_rs::authoring::*;
 
@@ -40,8 +38,8 @@ mod tests {
     // Borrowed from Rust Geodesy `noop` inner_op test
     fn no_change() -> Result<(), Error> {
         let mut ctx = Minimal::default();
-        ctx.register_op("longlat", OpConstructor(new));
-        let op = ctx.op("longlat xy_in=us-ft z_in=us-ft")?;
+        ctx.register_op("noop", OpConstructor(new));
+        let op = ctx.op("noop xy_in=us-ft z_in=us-ft")?;
 
         // EPSG:1134 - 3 parameter, ED50/WGS84, s = sqrt(27) m
         let mut operands = [GDA94];
