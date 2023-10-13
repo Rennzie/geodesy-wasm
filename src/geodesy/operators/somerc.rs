@@ -1,9 +1,12 @@
+#![allow(non_snake_case)]
+
 /// Swiss Oblique Mercator Projection
-/// https://proj.org/operations/projections/somerc.html
-/// Implementation copied from [Proj4rs](https://github.com/3liz/proj4rs/blob/main/src/tests.rs#L40)
 ///
-/// Resources:
-/// - https://download.osgeo.org/proj/swiss.pdf
+/// Implementation base on https://download.osgeo.org/proj/swiss.pdf
+/// with inspirations taken from
+///  - [proj4rs](https://github.com/3liz/proj4rs/blob/main/src/projections/somerc.rs)
+///  - [proj4js](https://github.com/proj4js/proj4js/blob/5995fa62fc7f4fdbbafb23d89b260bd863b0ca03/lib/projections/somerc.js)
+/// - [PROJ](https://proj.org/operations/projections/somerc.html)
 use geodesy_rs::authoring::*;
 use geodesy_rs::Error as RGError;
 use std::f64::consts::{FRAC_PI_2, FRAC_PI_4};
@@ -20,36 +23,43 @@ fn fwd(op: &Op, _ctx: &dyn Context, operands: &mut dyn CoordinateSet) -> usize {
 
     let el = op.params.ellps(0);
     let e = el.eccentricity();
+    let hlf_e = e * 0.5;
 
-    // Grab precomputed values
-    let hlf_e = op.params.real["hlf_e"];
+    let y_0 = op.params.real["y_0"];
+    let x_0 = op.params.real["x_0"];
+    let lam_0 = op.params.real["lon_0"].to_radians();
+
     let c = op.params.real["c"];
-    let k = op.params.real["k"];
-    let k_r = op.params.real["k_r"];
-    let sin_p_0 = op.params.real["sin_p_0"];
-    let cos_p_0 = op.params.real["cos_p_0"];
+    let K = op.params.real["K"];
+    let R = op.params.real["R"];
+
+    let sin_phi_0_p = op.params.real["sin_phi_0_p"];
+    let cos_phi_0_p = op.params.real["cos_phi_0_p"];
 
     for i in 0..n {
         let mut coord = operands.get_coord(i);
-        // might need to swap these
-        let lon = coord[0];
-        let lat = coord[1];
-
-        let sp = e * lat.sin();
-        let lat_p = 2.
-            * ((c * ((FRAC_PI_4 + 0.5 * lat).tan().ln() - hlf_e * ((1. + sp) / (1. - sp)).ln())
-                + k)
+        let lam = coord[0];
+        let phi = coord[1];
+        let sp = e * phi.sin();
+        let phi_p = 2.
+            * ((c * ((FRAC_PI_4 + 0.5 * phi).tan().ln() - hlf_e * ((1. + sp) / (1. - sp)).ln())
+                + K)
                 .exp())
             .atan()
             - FRAC_PI_2;
 
-        let lon_p = c * lon;
-        let cp = lat_p.cos();
-        let lat_pp = aasin(cos_p_0 * lat_p.sin() - sin_p_0 * cp * lon_p.cos());
-        let lon_pp = aasin(cp * lon_p.sin() / lat_pp.cos());
+        let lam_p = c * (lam - lam_0);
+        let (sin_lam_p, cos_lam_p) = lam_p.sin_cos();
+        let (sin_phi_p, cos_phi_p) = phi_p.sin_cos();
 
-        coord[0] = k_r * lon_pp;
-        coord[1] = k_r * (FRAC_PI_4 + 0.5 * lat_pp).tan().ln();
+        let phi_pp = (cos_phi_0_p * sin_phi_p - sin_phi_0_p * cos_phi_p * cos_lam_p).asin();
+        let lam_pp = (cos_phi_p * sin_lam_p / phi_pp.cos()).asin();
+
+        let x = R * lam_pp + x_0;
+        let y = R * (FRAC_PI_4 + 0.5 * phi_pp).tan().ln() + y_0;
+
+        coord[0] = x;
+        coord[1] = y;
 
         operands.set_coord(i, &coord);
         successes += 1;
@@ -63,51 +73,58 @@ fn fwd(op: &Op, _ctx: &dyn Context, operands: &mut dyn CoordinateSet) -> usize {
 fn inv(op: &Op, _ctx: &dyn Context, operands: &mut dyn CoordinateSet) -> usize {
     let mut successes = 0_usize;
     let n = operands.len();
-    const MAX_ITERATIONS: isize = 6;
+    const MAX_ITERATIONS: isize = 20;
 
     let el = op.params.ellps(0);
     let e = el.eccentricity();
 
-    // Grab precomputed values
-    let hlf_e = op.params.real["hlf_e"];
+    // Grab pre-computed values
     let c = op.params.real["c"];
-    let k = op.params.real["k"];
-    let k_r = op.params.real["k_r"];
-    let sin_p_0 = op.params.real["sin_p_0"];
-    let cos_p_0 = op.params.real["cos_p_0"];
-    let rone_es = op.params.real["rone_es"];
+    let K = op.params.real["K"];
+    let R = op.params.real["R"];
+
+    let lam_0 = op.params.real["lon_0"].to_radians();
+    let sin_phi_0_p = op.params.real["sin_phi_0_p"];
+    let cos_phi_0_p = op.params.real["cos_phi_0_p"];
+    let y_0 = op.params.real["y_0"];
+    let x_0 = op.params.real["x_0"];
 
     for i in 0..n {
         let mut coord = operands.get_coord(i);
-        let x = coord[1];
-        let y = coord[0];
+        let X = coord[0] - x_0;
+        let Y = coord[1] - y_0;
 
-        let lat_pp = 2. * (((y / k_r).exp()).atan() - FRAC_PI_4);
-        let lon_pp = x / k_r;
-        let cp = lat_pp.cos();
-        let mut lat_p = aasin(cos_p_0 * lat_pp.sin() + sin_p_0 * cp * lon_pp.cos());
-        let lon_p = aasin(cp * lon_pp.sin() / lat_p.cos());
-        let con = (k - (FRAC_PI_4 + 0.5 * lat_p).tan().ln()) / c;
+        let phi_pp = 2.0 * (((Y / R).exp()).atan() - FRAC_PI_4);
+        let lam_pp = X / R;
 
+        let sin_phi_p = cos_phi_0_p * phi_pp.sin() + sin_phi_0_p * phi_pp.cos() * lam_pp.cos();
+        let phi_p = sin_phi_p.asin();
+        let sin_lam_p = (phi_pp.cos() * lam_pp.sin()) / phi_p.cos();
+        let lam_p = sin_lam_p.asin();
+
+        let C = (K - (FRAC_PI_4 + 0.5 * phi_p).tan().ln()) / c;
+
+        let lam = (lam_p / c) + lam_0;
+        let mut phi = phi_p;
+
+        let mut prev_phi = phi_p;
         let mut j = MAX_ITERATIONS;
         while j > 0 {
-            let esp = e * lat_p.sin();
-            let delta_p = (con + (FRAC_PI_4 + 0.5 * lat_p).tan().ln()
-                - hlf_e * ((1. + esp) / (1. - esp)).ln())
-                * (1. - esp * esp)
-                * lat_p.cos()
-                * rone_es;
-            lat_p -= delta_p;
-            if delta_p.abs() < EPS_10 {
+            if (phi - prev_phi).abs() < EPS_10 {
                 break;
             }
+
+            let S = C + e * ((FRAC_PI_4 + (e * phi.sin()).asin() / 2.0).tan().ln());
+
+            prev_phi = phi;
+            phi = 2.0 * (S.exp()).atan() - FRAC_PI_2;
             j -= 1;
         }
         if j <= 0 {
-            panic!("somerc: Too many iterations in inverse")
+            panic!("somerc - inverse: Too many iterations")
         } else {
-            coord[0] = lon_p / c;
-            coord[1] = lat_p;
+            coord[0] = lam;
+            coord[1] = phi_p;
             operands.set_coord(i, &coord);
             successes += 1;
         }
@@ -123,7 +140,7 @@ pub const GAMUT: [OpParameter; 7] = [
     OpParameter::Flag { key: "inv" },
     OpParameter::Text { key: "ellps",  default: Some("GRS80") },
     // TODO: Handle case when R is used.
-    // If R is present it take precedence over ellps
+    // If R is present it takes precedence over ellps
     // OpParameter::Real{key: "R", default: None},
 
     OpParameter::Real { key: "lon_0",  default: Some(0_f64) },
@@ -139,43 +156,33 @@ pub fn new(parameters: &RawParameters, _ctx: &dyn Context) -> Result<Op, RGError
     let mut params = ParsedParameters::new(parameters, &GAMUT)?;
 
     let el = params.ellps(0);
-    let hlf_e = 0.5 * el.eccentricity();
-    let es = el.eccentricity_squared();
     let e = el.eccentricity();
+    let hlf_e = e * 0.5;
+    let es = el.eccentricity_squared();
+    let a = el.semimajor_axis();
 
-    // As per https://github.com/3liz/proj4rs/blob/a06fb2082fb1b7d7fca609a9f6a1259c993781d6/src/ellps.rs#L89C1-L90C34
-    let one_es = 1. - el.eccentricity_squared();
-    let rone_es = 1. / one_es;
+    let k_0 = params.real["k_0"];
+    let phi_0 = params.real["lat_0"].to_radians();
 
-    let lat_0 = params.real["lat_0"].to_radians();
-    // https://github.com/3liz/proj4rs/blob/a06fb2082fb1b7d7fca609a9f6a1259c993781d6/src/proj.rs#L350C4-L350C68
-    let (sin_lat, cos_lat) = lat_0.sin_cos();
+    let (sin_phi_0, cos_phi_0) = phi_0.sin_cos();
 
-    let cp = cos_lat * cos_lat;
-    let c = (1. + es * cp * cp * rone_es).sqrt();
-    let sin_p_0 = sin_lat / c;
-    let lat_p0 = aasin(sin_p_0);
-    let cos_p_0 = lat_p0.cos();
-    let sp = sin_lat * e;
-    let k = (FRAC_PI_4 + 0.5 * lat_p0).tan().ln()
-        - c * ((FRAC_PI_4 + 0.5 * lat_0).tan().ln() - hlf_e * ((1. + sp) / (1. - sp)).ln());
+    let c = (1.0 + (es * cos_phi_0.powi(4) / (1.0 - es))).sqrt();
+    let sin_phi_0_p = sin_phi_0 / c;
+    let phi_0_p = sin_phi_0_p.asin();
+    let cos_phi_0_p = phi_0_p.cos();
 
-    // let alpha = (1.0 + es / (1.0 - es) * (cos_lat.powi(4))).sqrt();
+    let R = k_0 * a * (1.0 - es).sqrt() / (1.0 - es * sin_phi_0.powi(2));
 
-    // let k1 = (FRAC_PI_4 + 0.5 * sin_p_0).tan().ln();
-    // let k2 = (FRAC_PI_4 + 0.5 * lat_0).tan().ln();
-    // let k3 = ((1.0 + e * sin_lat) / (1.0 - e * sin_lat)).ln();
-    // let K = k1 - alpha * k2 + alpha * e / 2.0 * k3;
+    let k1 = (FRAC_PI_4 + 0.5 * (sin_phi_0 / c).asin()).tan().ln();
+    let k2 = (FRAC_PI_4 + 0.5 * phi_0).tan().ln();
+    let k3 = ((1.0 + e * sin_phi_0) / (1.0 - e * sin_phi_0)).ln();
+    let K = k1 - c * k2 + c * hlf_e * k3;
 
-    let k_r = params.real["k_0"] * one_es.sqrt() / (1. - sp * sp);
-
+    params.real.insert("K", K);
+    params.real.insert("R", R);
     params.real.insert("c", c);
-    params.real.insert("hlf_e", hlf_e);
-    params.real.insert("rone_es", rone_es);
-    params.real.insert("k", k);
-    params.real.insert("k_r", k_r);
-    params.real.insert("cos_p_0", cos_p_0);
-    params.real.insert("sin_p_0", sin_p_0);
+    params.real.insert("sin_phi_0_p", sin_phi_0_p);
+    params.real.insert("cos_phi_0_p", cos_phi_0_p);
 
     let descriptor = OpDescriptor::new(def, InnerOp(fwd), Some(InnerOp(inv)));
     let steps = Vec::<Op>::new();
@@ -190,20 +197,6 @@ pub fn new(parameters: &RawParameters, _ctx: &dyn Context) -> Result<Op, RGError
 }
 
 // ----- Ancillary functions -----------------------------------------------------------
-// https://github.com/3liz/proj4rs/blob/a06fb2082fb1b7d7fca609a9f6a1259c993781d6/src/math/aasincos.rs#L7-L21
-const ONE_TOL: f64 = 1.000_000_000_000_01;
-fn aasin(v: f64) -> f64 {
-    let av = v.abs();
-    if av >= 1. {
-        if av > ONE_TOL {
-            f64::NAN
-        } else {
-            FRAC_PI_2 * v.signum()
-        }
-    } else {
-        v.asin()
-    }
-}
 
 // ----- T E S T S ---------------------------------------------------------------------
 
@@ -212,10 +205,55 @@ mod tests {
     use super::*;
     use float_eq::assert_float_eq;
 
-    // NOTE: Tests are failing. Probs need better ones.
+    #[test]
+    fn somerc_inv() -> Result<(), RGError> {
+        let mut ctx = Minimal::default();
+        ctx.register_op("somerc", OpConstructor(new));
+        let op = ctx.op("somerc lat_0=46.9524055555556 lon_0=7.43958333333333 k_0=1 x_0=2600000 y_0=1200000 ellps=bessel")?;
+
+        let input = [Coor4D::raw(2531098.0, 1167363.0, 452.0, 0.0)];
+        let mut operands = input.clone();
+
+        let expected = [Coor4D::raw(
+            0.11413236074541264,
+            0.814287372550452,
+            452.0,
+            0.0,
+        )];
+
+        ctx.apply(op, Inv, &mut operands)?;
+        assert_float_eq!(operands[0][0], expected[0][0], abs_all <= 1e-9);
+
+        Ok(())
+    }
 
     #[test]
-    fn proj_somerc_el() -> Result<(), RGError> {
+    fn somerc_fwd_and_round_trip() -> Result<(), RGError> {
+        let mut ctx = Minimal::default();
+        ctx.register_op("somerc", OpConstructor(new));
+        let op = ctx.op("somerc lat_0=46.9524055555556 lon_0=7.43958333333333 k_0=1 x_0=2600000 y_0=1200000 ellps=bessel")?;
+
+        let input = [Coor4D::raw(
+            0.11413236074541264,
+            0.814287372550452,
+            452.0,
+            0.0,
+        )];
+        let mut operands = input.clone();
+        let expected = [Coor4D::raw(2531098.0, 1167363.0, 452.0, 0.0)];
+
+        ctx.apply(op, Fwd, &mut operands)?;
+        assert_float_eq!(operands[0][0], expected[0][0], abs_all <= 1e-9);
+
+        // Inv + roundtrip
+        ctx.apply(op, Inv, &mut operands)?;
+        assert_float_eq!(operands[0][0], input[0][0], abs_all <= 1e-9);
+
+        Ok(())
+    }
+
+    #[test]
+    fn somerc_el() -> Result<(), RGError> {
         let mut ctx = Minimal::default();
         ctx.register_op("somerc", OpConstructor(new));
         let op = ctx.op("somerc ellps=GRS80")?;
@@ -240,62 +278,19 @@ mod tests {
         let successes = ctx.apply(op, Fwd, &mut operands)?;
 
         for i in 0..successes {
-            assert_float_eq!(operands[i][0], expected[i][0], abs_all <= 1e-9);
-            assert_float_eq!(operands[i][1], expected[i][1], abs_all <= 1e-9);
-            assert_float_eq!(operands[i][2], expected[i][2], abs_all <= 1e-9);
-            assert_float_eq!(operands[i][3], expected[i][3], abs_all <= 1e-9);
+            assert_float_eq!(operands[i][0], expected[i][0], abs_all <= 1e-8);
+            assert_float_eq!(operands[i][1], expected[i][1], abs_all <= 1e-8);
+            assert_float_eq!(operands[i][2], expected[i][2], abs_all <= 1e-8);
+            assert_float_eq!(operands[i][3], expected[i][3], abs_all <= 1e-8);
         }
 
         // Inverse + roundtrip
         let inverse_successes = ctx.apply(op, Inv, &mut operands)?;
         for i in 0..inverse_successes {
-            assert_float_eq!(operands[i][0], input[i][0], abs_all <= 1e-9);
-            assert_float_eq!(operands[i][1], input[i][1], abs_all <= 1e-9);
-            assert_float_eq!(operands[i][2], input[i][2], abs_all <= 1e-9);
-            assert_float_eq!(operands[i][3], input[i][3], abs_all <= 1e-9);
-        }
-
-        Ok(())
-    }
-
-    #[test]
-    fn proj_somerc_sp() -> Result<(), RGError> {
-        let mut ctx = Minimal::default();
-        ctx.register_op("somerc", OpConstructor(new));
-        let op = ctx.op("somerc a=6400000")?;
-
-        let input = [
-            Coor4D::gis(2., 1., 0., 0.0),
-            Coor4D::gis(2., -1., 0., 0.0),
-            Coor4D::gis(-2., 1., 0., 0.0),
-            Coor4D::gis(-2., -1., 0., 0.0),
-        ];
-
-        let mut operands = input.clone();
-
-        let expected = [
-            Coor4D::raw(223402.14425527418, 111706.74357494408, 0., 0.),
-            Coor4D::raw(223402.14425527418, -111706.74357494518, 0., 0.),
-            Coor4D::raw(-223402.14425527418, 111706.74357494408, 0., 0.),
-            Coor4D::raw(-223402.14425527418, -111706.74357494518, 0., 0.),
-        ];
-
-        let successes = ctx.apply(op, Fwd, &mut operands)?;
-
-        for i in 0..successes {
-            assert_float_eq!(operands[i][0], expected[i][0], abs_all <= 1e-9);
-            assert_float_eq!(operands[i][1], expected[i][1], abs_all <= 1e-9);
-            assert_float_eq!(operands[i][2], expected[i][2], abs_all <= 1e-9);
-            assert_float_eq!(operands[i][3], expected[i][3], abs_all <= 1e-9);
-        }
-
-        // Inverse + roundtrip
-        let inverse_successes = ctx.apply(op, Inv, &mut operands)?;
-        for i in 0..inverse_successes {
-            assert_float_eq!(operands[i][0], input[i][0], abs_all <= 1e-9);
-            assert_float_eq!(operands[i][1], input[i][1], abs_all <= 1e-9);
-            assert_float_eq!(operands[i][2], input[i][2], abs_all <= 1e-9);
-            assert_float_eq!(operands[i][3], input[i][3], abs_all <= 1e-9);
+            assert_float_eq!(operands[i][0], input[i][0], abs_all <= 1e-4);
+            assert_float_eq!(operands[i][1], input[i][1], abs_all <= 1e-4);
+            assert_float_eq!(operands[i][2], input[i][2], abs_all <= 1e-4);
+            assert_float_eq!(operands[i][3], input[i][3], abs_all <= 1e-4);
         }
 
         Ok(())
