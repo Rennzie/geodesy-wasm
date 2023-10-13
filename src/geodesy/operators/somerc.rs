@@ -4,9 +4,9 @@
 ///
 /// Implementation base on https://download.osgeo.org/proj/swiss.pdf
 /// with inspirations taken from
-///  - [proj4rs](https://github.com/3liz/proj4rs/blob/main/src/projections/somerc.rs)
-///  - [proj4js](https://github.com/proj4js/proj4js/blob/5995fa62fc7f4fdbbafb23d89b260bd863b0ca03/lib/projections/somerc.js)
-/// - [PROJ](https://proj.org/operations/projections/somerc.html)
+///     - [proj4rs](https://github.com/3liz/proj4rs/blob/main/src/projections/somerc.rs)
+///     - [proj4js](https://github.com/proj4js/proj4js/blob/5995fa62fc7f4fdbbafb23d89b260bd863b0ca03/lib/projections/somerc.js)
+///     - [PROJ](https://proj.org/operations/projections/somerc.html)
 use geodesy_rs::authoring::*;
 use geodesy_rs::Error as RGError;
 use std::f64::consts::{FRAC_PI_2, FRAC_PI_4};
@@ -25,6 +25,7 @@ fn fwd(op: &Op, _ctx: &dyn Context, operands: &mut dyn CoordinateSet) -> usize {
     let e = el.eccentricity();
     let hlf_e = e * 0.5;
 
+    // Grab pre-computed values
     let y_0 = op.params.real["y_0"];
     let x_0 = op.params.real["x_0"];
     let lam_0 = op.params.real["lon_0"].to_radians();
