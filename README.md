@@ -82,6 +82,10 @@ console.log(reverse); // [1, 2]
 
 As far as I can tell the `longlat` operator is a no-op. My assumption is it's for historical reasons, so in geodesy-wasm it's just a noop.
 
+#### somerc (Swiss Oblique Mercator)
+
+Not much to say...
+
 ## Development
 
 For convenience all scripts can be run with `bun <script>`. Make sure all the javascript related dependencies are installed with `bun install`. Rust dependencies are managed by [cargo](https://doc.rust-lang.org/cargo/) and don't require and explicit install step.
