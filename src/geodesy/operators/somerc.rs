@@ -10,6 +10,8 @@ use std::f64::consts::{FRAC_PI_2, FRAC_PI_4};
 
 // ----- C O M M O N -------------------------------------------------------------------
 
+const EPS_10: f64 = 1.0e-10;
+
 // ----- F O R W A R D -----------------------------------------------------------------
 
 fn fwd(op: &Op, _ctx: &dyn Context, operands: &mut dyn CoordinateSet) -> usize {
@@ -77,8 +79,8 @@ fn inv(op: &Op, _ctx: &dyn Context, operands: &mut dyn CoordinateSet) -> usize {
 
     for i in 0..n {
         let mut coord = operands.get_coord(i);
-        let x = coord[0];
-        let y = coord[1];
+        let x = coord[1];
+        let y = coord[0];
 
         let lat_pp = 2. * (((y / k_r).exp()).atan() - FRAC_PI_4);
         let lon_pp = x / k_r;
@@ -96,13 +98,13 @@ fn inv(op: &Op, _ctx: &dyn Context, operands: &mut dyn CoordinateSet) -> usize {
                 * lat_p.cos()
                 * rone_es;
             lat_p -= delta_p;
-            if delta_p.abs() < 10.0e-10 {
+            if delta_p.abs() < EPS_10 {
                 break;
             }
             j -= 1;
         }
         if j <= 0 {
-            panic!("somerc: To many iterations in inverse")
+            panic!("somerc: Too many iterations in inverse")
         } else {
             coord[0] = lon_p / c;
             coord[1] = lat_p;
@@ -145,7 +147,7 @@ pub fn new(parameters: &RawParameters, _ctx: &dyn Context) -> Result<Op, RGError
     let one_es = 1. - el.eccentricity_squared();
     let rone_es = 1. / one_es;
 
-    let lat_0 = params.real["lat_0"];
+    let lat_0 = params.real["lat_0"].to_radians();
     // https://github.com/3liz/proj4rs/blob/a06fb2082fb1b7d7fca609a9f6a1259c993781d6/src/proj.rs#L350C4-L350C68
     let (sin_lat, cos_lat) = lat_0.sin_cos();
 
@@ -157,6 +159,14 @@ pub fn new(parameters: &RawParameters, _ctx: &dyn Context) -> Result<Op, RGError
     let sp = sin_lat * e;
     let k = (FRAC_PI_4 + 0.5 * lat_p0).tan().ln()
         - c * ((FRAC_PI_4 + 0.5 * lat_0).tan().ln() - hlf_e * ((1. + sp) / (1. - sp)).ln());
+
+    // let alpha = (1.0 + es / (1.0 - es) * (cos_lat.powi(4))).sqrt();
+
+    // let k1 = (FRAC_PI_4 + 0.5 * sin_p_0).tan().ln();
+    // let k2 = (FRAC_PI_4 + 0.5 * lat_0).tan().ln();
+    // let k3 = ((1.0 + e * sin_lat) / (1.0 - e * sin_lat)).ln();
+    // let K = k1 - alpha * k2 + alpha * e / 2.0 * k3;
+
     let k_r = params.real["k_0"] * one_es.sqrt() / (1. - sp * sp);
 
     params.real.insert("c", c);
