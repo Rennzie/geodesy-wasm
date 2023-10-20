@@ -26,7 +26,7 @@ export class Geodesy {
       }
     }
 
-    this.ctx = new GeodesyWasm.Ctx(definition, rawGrids);
+    this.ctx = new GeodesyWasm.Ctx(tidyProjString(definition), rawGrids);
 
     // TODO: How do we cleanup wasm memory if the class is GC'd?
   }
@@ -170,6 +170,22 @@ function unflattenCoords(
     res.push(row);
   }
   return res;
+}
+
+// ---- Utils ----
+
+/**
+ * A temporary helper for minor differences between PROJ and Geodesy.
+ * @param projString
+ * @returns
+ */
+function tidyProjString(projString: string): string {
+  if (!projString.includes('+proj=')) return projString;
+
+  // Replace 'hgridshift' with 'gridshift'
+  projString = projString.replace(/hgridshift/g, 'gridshift');
+
+  return projString;
 }
 
 export * as GeodesyWasm from '@geodesy-wasm';
