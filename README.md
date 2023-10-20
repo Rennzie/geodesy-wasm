@@ -20,12 +20,11 @@ _Note: Please see the [warnings](https://github.com/busstoptaktik/geodesy?tab=re
 4. [x] NTv2 support
    1. Being added in the geodesy crate [here](https://github.com/busstoptaktik/geodesy/pull/60) but is already being used in geodesy-wasm in place of gravsoft grid support.
 5. [x] Usage guide and examples
-6. [ ] Documentation
-7. [ ] Add operators for better parity with PROJ
+6. [x] Documentation
+7. [x] Add operators for better parity with PROJ
    1. [x] unitconvert
-   2. [ ] hgridshift
-   3. [ ] longlat?
-   4. [ ] axisswap?
+   2. [x] hgridshift
+   3. [x] longlat?
 
 Contributions very much welcome!
 
