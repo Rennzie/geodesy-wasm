@@ -1,9 +1,6 @@
-use super::coordinate::CoordBuffer;
-use super::grid::RawGrids;
-use super::wasmcontext::WasmContext;
+use super::{coordinate::CoordBuffer, grid::GridLoader, wasmcontext::WasmContext};
 use crate::error::WasmResult;
-use geodesy_rs::authoring::parse_proj;
-use geodesy_rs::prelude::*;
+use geodesy_rs::{authoring::parse_proj, prelude::*};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -15,7 +12,7 @@ pub struct Ctx {
 #[wasm_bindgen]
 impl Ctx {
     #[wasm_bindgen(constructor)]
-    pub fn new(definition: &str, grids: Option<RawGrids>) -> WasmResult<Ctx> {
+    pub fn new(definition: &str, grids: Option<GridLoader>) -> WasmResult<Ctx> {
         let mut context = WasmContext::new();
 
         let mut geodesy_def = definition.to_owned();
@@ -25,7 +22,7 @@ impl Ctx {
 
         if let Some(grids) = grids {
             for (grid_key, grid_blob) in grids.into_iter() {
-                context.set_blob(grid_key.as_str(), grid_blob)?;
+                context.set_grid(grid_key.as_str(), grid_blob)?;
             }
         }
 

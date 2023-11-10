@@ -18,15 +18,15 @@ export class Geodesy {
    * @param gridMap - A Map of gridshift files used by the definition. The key is the grid name and the value is a `DataView` of the grid file.
    */
   constructor(definition: string, gridMap?: Record<string, DataView>) {
-    let rawGrids = undefined;
+    let gridLoader = undefined;
     if (gridMap) {
-      rawGrids = new GeodesyWasm.RawGrids();
+      gridLoader = new GeodesyWasm.GridLoader();
       for (const [key, value] of Object.entries(gridMap)) {
-        rawGrids.add(key, value);
+        gridLoader.load(key, value);
       }
     }
 
-    this.ctx = new GeodesyWasm.Ctx(tidyProjString(definition), rawGrids);
+    this.ctx = new GeodesyWasm.Ctx(tidyProjString(definition), gridLoader);
 
     // TODO: How do we cleanup wasm memory if the class is GC'd?
   }
