@@ -1,9 +1,6 @@
-use super::coordinate::CoordBuffer;
-use super::grid::GridLoader;
-use super::wasmcontext::WasmContext;
+use super::{coordinate::CoordBuffer, grid::GridLoader, wasmcontext::WasmContext};
 use crate::error::WasmResult;
-use geodesy_rs::authoring::parse_proj;
-use geodesy_rs::prelude::*;
+use geodesy_rs::{authoring::parse_proj, prelude::*};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]

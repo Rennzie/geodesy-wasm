@@ -1,12 +1,7 @@
-use crate::error::Result as GWResult;
-use geodesy_rs::authoring::{Context, OpConstructor, BUILTIN_ADAPTORS};
-use geodesy_rs::authoring::{Op, ParsedParameters};
-use geodesy_rs::Error as RgError;
-use geodesy_rs::{prelude::*, GridTrait};
-use std::collections::BTreeMap;
-use std::rc::Rc;
-
 use super::operators::ACCESSORY_OPERATORS;
+use crate::error::Result as GWResult;
+use geodesy_rs::{authoring::*, Error as RgError};
+use std::{collections::BTreeMap, sync::Arc};
 
 // ----- T H E   W A S M  C T X   P R O V I D E R ---------------------------------
 // Modified from Rust Geodesy Minimal context to work with web inputs.
@@ -22,13 +17,13 @@ pub struct WasmContext {
     /// Instantiations of operators
     operators: BTreeMap<OpHandle, Op>,
     /// DataViews for external resources like grids
-    grids: BTreeMap<String, Rc<dyn GridTrait>>,
+    grids: BTreeMap<String, Arc<dyn Grid>>,
 }
 
 const BAD_ID_MESSAGE: RgError = RgError::General("WasmContext: Unknown operator id");
 
 impl WasmContext {
-    pub fn set_grid(&mut self, key: &str, grid: Rc<dyn GridTrait>) -> GWResult<()> {
+    pub fn set_grid(&mut self, key: &str, grid: Arc<dyn Grid>) -> GWResult<()> {
         self.grids.insert(key.to_string(), grid);
 
         Ok(())
@@ -132,7 +127,7 @@ impl Context for WasmContext {
     }
 
     /// Access grid resources by identifier
-    fn get_grid(&self, name: &str) -> Result<Rc<(dyn GridTrait + 'static)>, RgError> {
+    fn get_grid(&self, name: &str) -> Result<Arc<(dyn Grid + 'static)>, RgError> {
         if let Some(grid) = self.grids.get(name) {
             // It's a reference clone
             return Ok(grid.clone());

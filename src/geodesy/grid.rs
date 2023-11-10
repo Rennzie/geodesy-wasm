@@ -1,17 +1,18 @@
 use crate::error::WasmResult;
-use geodesy_rs::{GridTrait, Ntv2Grid};
+use geodesy_rs::{Grid, Ntv2Grid};
 use js_sys::{DataView, Uint8Array};
-use std::collections::btree_map::IntoIter;
-use std::collections::BTreeMap;
-use std::iter::Map;
-use std::rc::Rc;
+use std::{
+    collections::{btree_map::IntoIter, BTreeMap},
+    iter::Map,
+    sync::Arc,
+};
 use wasm_bindgen::prelude::*;
 
 /// A helper class for loading gridshift files into the `Ctx` class.
 /// The class is consumed in the `Ctx` new method to ensure we don't double the memory usage.
 /// It is therefore not safe to use this class after the `Ctx` has been created.
 #[wasm_bindgen]
-pub struct GridLoader(BTreeMap<String, Rc<dyn GridTrait>>);
+pub struct GridLoader(BTreeMap<String, Arc<dyn Grid>>);
 
 #[wasm_bindgen]
 impl GridLoader {
@@ -37,16 +38,16 @@ impl GridLoader {
         // - from IndexDB at a key/database that we pre-define
 
         let grid = Ntv2Grid::new(&buf)?;
-        self.0.insert(key.to_owned(), Rc::new(grid));
+        self.0.insert(key.to_owned(), Arc::new(grid));
         Ok(())
     }
 }
 
 impl IntoIterator for GridLoader {
-    type Item = (String, Rc<dyn GridTrait>);
+    type Item = (String, Arc<dyn Grid>);
     type IntoIter = Map<
-        IntoIter<String, Rc<dyn GridTrait>>,
-        fn((String, Rc<dyn GridTrait>)) -> (String, Rc<dyn GridTrait>),
+        IntoIter<String, Arc<dyn Grid>>,
+        fn((String, Arc<dyn Grid>)) -> (String, Arc<dyn Grid>),
     >;
 
     fn into_iter(self) -> Self::IntoIter {
