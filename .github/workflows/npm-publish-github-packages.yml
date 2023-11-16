@@ -40,7 +40,9 @@ jobs:
         with:
           node-version: 18
           registry-url: https://npm.pkg.github.com/
-      - run: npm ci
-      - run: npm publish
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+      - run: bun run publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
