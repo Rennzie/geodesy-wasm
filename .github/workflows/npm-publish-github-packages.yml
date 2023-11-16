@@ -43,6 +43,9 @@ jobs:
       - uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
-      - run: bun run publish
+      - name: Install
+        run: bun install
+      - name: Build and Publish
+        run: bun run publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
