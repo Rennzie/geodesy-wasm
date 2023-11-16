@@ -35,6 +35,9 @@ jobs:
       contents: read
       packages: write
     steps:
+      - uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: 'latest'
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
@@ -43,6 +46,7 @@ jobs:
       - uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
+
       - name: Install
         run: bun install
       - name: Build and Publish
