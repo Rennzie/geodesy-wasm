@@ -1,13 +1,55 @@
+use crate::error::{Error, WasmResult};
+
 use super::operators::ACCESSORY_OPERATORS;
-use crate::error::Result as GWResult;
-use geodesy_rs::{authoring::*, Error as RgError};
-use std::{collections::BTreeMap, sync::Arc};
+use geodesy_rs::{authoring::*, Error as RgError, Ntv2Grid};
+use js_sys::{DataView, Uint8Array};
+use once_cell::sync::Lazy;
+use std::{
+    collections::BTreeMap,
+    sync::{Arc, Mutex},
+};
+use wasm_bindgen::prelude::*;
+
+// A single store on the heap for all grids
+static GRIDS: Lazy<Mutex<BTreeMap<String, Arc<dyn Grid>>>> =
+    Lazy::new(|| Mutex::new(BTreeMap::<String, Arc<dyn Grid>>::new()));
+
+/// Register grids for use in the [Geo] class.
+/// Grids MUST be registered before the [Geo] class is constructed.
+/// NOTE: This is a limitation of the current implementation.
+///
+/// The keys used to load the grid MUST be the same
+/// as the grid=<key> parameter in the definition string.
+///
+/// Supported Grid Types:
+///     - `NTv2` (.gsb)
+///     - `Gravsoft`
+#[wasm_bindgen(js_name = registerGrid)]
+pub fn register_grid(key: &str, data_view: Option<DataView>) -> WasmResult<()> {
+    // IDEA: To get more sophisticated we could
+    // -  fetch from the network by identifying if the name is http etc
+    //      -- either from the cdn or from a user defined url
+    // - from IndexDB at a key/database that we pre-define
+
+    if let Some(dv) = data_view {
+        let grid: Vec<u8> = Uint8Array::new(&dv.buffer()).to_vec();
+
+        let mut grids = GRIDS.lock().unwrap();
+
+        // TODO: Pull this into a separate function when we have more ways to get a grid
+        if key.trim().ends_with("gsb") {
+            grids.insert(key.to_string(), Arc::new(Ntv2Grid::new(&grid)?));
+        } else {
+            grids.insert(key.to_string(), Arc::new(BaseGrid::gravsoft(&grid)?));
+        }
+    } else {
+        Err(Error::MissingGrid(key.to_string()))?
+    }
+
+    Ok(())
+}
 
 // ----- T H E   W A S M  C T X   P R O V I D E R ---------------------------------
-// Modified from Rust Geodesy Minimal context to work with web inputs.
-// Changes:
-//      - Add blobs via `set_blob` instead of `get_blob` fetching directly from the file system
-
 #[derive(Debug, Default)]
 pub struct WasmContext {
     /// Constructors for user defined operators
@@ -16,19 +58,9 @@ pub struct WasmContext {
     resources: BTreeMap<String, String>,
     /// Instantiations of operators
     operators: BTreeMap<OpHandle, Op>,
-    /// Single Grid store for use by operators
-    grids: BTreeMap<String, Arc<dyn Grid>>,
 }
 
 const BAD_ID_MESSAGE: RgError = RgError::General("WasmContext: Unknown operator id");
-
-impl WasmContext {
-    pub fn set_grid(&mut self, key: &str, grid: Arc<dyn Grid>) -> GWResult<()> {
-        self.grids.insert(key.to_string(), grid);
-
-        Ok(())
-    }
-}
 
 impl Context for WasmContext {
     fn new() -> WasmContext {
@@ -128,7 +160,7 @@ impl Context for WasmContext {
 
     /// Access grid resources by identifier
     fn get_grid(&self, name: &str) -> Result<Arc<(dyn Grid + 'static)>, RgError> {
-        if let Some(grid) = self.grids.get(name) {
+        if let Some(grid) = GRIDS.lock().unwrap().get(name) {
             // It's a reference clone
             return Ok(grid.clone());
         }
