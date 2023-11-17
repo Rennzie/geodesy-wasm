@@ -3,16 +3,18 @@ use crate::error::WasmResult;
 use geodesy_rs::{authoring::parse_proj, prelude::*};
 use wasm_bindgen::prelude::*;
 
+/// A wrapper around a Geodesy Context
+/// This is the main entry point for the library.
 #[wasm_bindgen]
-pub struct Ctx {
+pub struct Geo {
     context: WasmContext,
     op_handle: OpHandle,
 }
 
 #[wasm_bindgen]
-impl Ctx {
+impl Geo {
     #[wasm_bindgen(constructor)]
-    pub fn new(definition: &str, grids: Option<GridLoader>) -> WasmResult<Ctx> {
+    pub fn new(definition: &str, grids: Option<GridLoader>) -> WasmResult<Geo> {
         let mut context = WasmContext::new();
 
         let mut geodesy_def = definition.to_owned();

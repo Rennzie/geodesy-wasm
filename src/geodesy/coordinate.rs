@@ -14,7 +14,7 @@ pub struct CoordBuffer(#[wasm_bindgen(skip)] pub CoordSetBuffer);
 
 #[wasm_bindgen]
 impl CoordBuffer {
-    /// Creates a new CoordBuffer from a JS array of f64 values.
+    /// Creates a new [CoordBuffer] from a JS array of f64 values.
     /// The array should be flat and contain either 2D or 3D coordinates.
     /// Note: If you are providing angular coordinates, they MUST be in radians AND
     /// it's assumed they are in the order (longitude, latitude, height) OR (easting, northing, height).

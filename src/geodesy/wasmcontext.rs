@@ -16,7 +16,7 @@ pub struct WasmContext {
     resources: BTreeMap<String, String>,
     /// Instantiations of operators
     operators: BTreeMap<OpHandle, Op>,
-    /// DataViews for external resources like grids
+    /// Single Grid store for use by operators
     grids: BTreeMap<String, Arc<dyn Grid>>,
 }
 
