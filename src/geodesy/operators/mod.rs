@@ -1,8 +1,8 @@
-use geodesy_rs::authoring::*;
-
 mod noop;
 mod unitconvert;
 pub mod units;
+
+use geodesy_rs::authoring::*;
 
 #[rustfmt::skip]
 pub const ACCESSORY_OPERATORS: [(&str, OpConstructor); 5] = [

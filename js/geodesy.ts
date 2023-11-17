@@ -1,7 +1,7 @@
 import * as GeodesyWasm from '@geodesy-wasm';
 
 export class Geodesy {
-  private ctx: GeodesyWasm.Ctx;
+  private ctx: GeodesyWasm.Geo;
 
   /**
    * The `Geodesy` class wraps the geodesy-wasm library and provides a simpler JS friendly interface that abstracts some of the wasmness out of it.
@@ -26,7 +26,7 @@ export class Geodesy {
       }
     }
 
-    this.ctx = new GeodesyWasm.Ctx(tidyProjString(definition), gridLoader);
+    this.ctx = new GeodesyWasm.Geo(tidyProjString(definition), gridLoader);
 
     // TODO: How do we cleanup wasm memory if the class is GC'd?
   }

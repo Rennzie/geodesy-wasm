@@ -8,9 +8,9 @@ use std::{
 };
 use wasm_bindgen::prelude::*;
 
-/// A helper class for loading gridshift files into the `Ctx` class.
-/// The class is consumed in the `Ctx` new method to ensure we don't double the memory usage.
-/// It is therefore not safe to use this class after the `Ctx` has been created.
+/// A helper class for loading gridshift files into the [Geo] class.
+/// The class is consumed in the [Geo#new()] method to ensure we don't double the memory usage.
+/// It's therefore not safe to use this class after [Geo] has been constructed.
 #[wasm_bindgen]
 pub struct GridLoader(BTreeMap<String, Arc<dyn Grid>>);
 
