@@ -1,4 +1,4 @@
-use super::{coordinate::CoordBuffer, grid::GridLoader, wasmcontext::WasmContext};
+use super::{coordinate::CoordBuffer, wasmcontext::WasmContext};
 use crate::error::WasmResult;
 use geodesy_rs::{authoring::parse_proj, prelude::*};
 use wasm_bindgen::prelude::*;
@@ -14,18 +14,12 @@ pub struct Geo {
 #[wasm_bindgen]
 impl Geo {
     #[wasm_bindgen(constructor)]
-    pub fn new(definition: &str, grids: Option<GridLoader>) -> WasmResult<Geo> {
+    pub fn new(definition: &str) -> WasmResult<Geo> {
         let mut context = WasmContext::new();
 
         let mut geodesy_def = definition.to_owned();
         if definition.contains("+proj=") {
             geodesy_def = parse_proj(definition)?;
-        }
-
-        if let Some(grids) = grids {
-            for (grid_key, grid_blob) in grids.into_iter() {
-                context.set_grid(grid_key.as_str(), grid_blob)?;
-            }
         }
 
         // Missing grids will error out here

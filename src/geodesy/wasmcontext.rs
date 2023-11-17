@@ -43,7 +43,9 @@ pub fn register_grid(key: &str, data_view: Option<DataView>) -> WasmResult<()> {
             grids.insert(key.to_string(), Arc::new(BaseGrid::gravsoft(&grid)?));
         }
     } else {
-        Err(Error::MissingGrid(key.to_string()))?
+        Err(Error::MissingGrid(
+            format!("Did you forget to call register_grid for {:?}", key).to_string(),
+        ))?
     }
 
     Ok(())

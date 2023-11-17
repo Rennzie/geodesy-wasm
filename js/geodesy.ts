@@ -18,17 +18,16 @@ export class Geodesy {
    * @param gridMap - A Map of gridshift files used by the definition. The key is the grid name and the value is a `DataView` of the grid file.
    */
   constructor(definition: string, gridMap?: Record<string, DataView>) {
-    let gridLoader = undefined;
     if (gridMap) {
-      gridLoader = new GeodesyWasm.GridLoader();
       for (const [key, value] of Object.entries(gridMap)) {
-        gridLoader.load(key, value);
+        GeodesyWasm.registerGrid(key, value);
       }
     }
 
-    this.ctx = new GeodesyWasm.Geo(tidyProjString(definition), gridLoader);
+    this.ctx = new GeodesyWasm.Geo(tidyProjString(definition));
 
     // TODO: How do we cleanup wasm memory if the class is GC'd?
+    // Could try Explicit Resource Management: https://iliazeus.github.io/articles/js-explicit-resource-management-en/
   }
 
   /**
