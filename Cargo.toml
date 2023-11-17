@@ -1,6 +1,6 @@
 [package]
 name = "geodesy-wasm"
-version = "0.5.0-beta.6"
+version = "0.5.0"
 keywords = ["geospatial", "geodesy", "cartography", "geography"]
 categories = ["science"]
 authors = ["Sean Rennie <sean.rennie@sensat.co.uk>"]
@@ -20,7 +20,7 @@ default = ["console_error_panic_hook", "console_log"]
 [dependencies]
 wasm-bindgen = "0.2.86"
 
-geodesy_rs = { package = "geodesy", git = "https://github.com/Rennzie/geodesy.git", rev = "441651cc768276ba539232ed33f23f0ac4dde921", version = "0.10.0", features = [
+geodesy_rs = { package = "geodesy", git = "https://github.com/Rennzie/geodesy.git", rev = "17d04f29b2d28f72ee83006f654aaf3664839456", version = "0.10.0", features = [
   "js",
 ] }
 

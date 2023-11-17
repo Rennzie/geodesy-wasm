@@ -16,11 +16,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- ## [Unreleased] -->
 
-## [0.5.0-beta.6] - 2023-11-16
+## [0.5.0] - 2023-11-17
 
-### Fixed
+### Added
 
-CI Script for publishing to Github npm registry
+- Support for NTv2 Grids with multiple subgrids via [Geodesy:#74](https://github.com/busstoptaktik/geodesy/pull/74)
+- General clean ups and re-org i.e rename `Ctx` -> `Geo`
+
+## [0.5.0-beta.[2->6]] - 2023-11-16
+
+Iteration to get teh CI publishing working
 
 ## [0.5.0-beta.1] - 2023-11-14
 
