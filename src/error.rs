@@ -8,5 +8,8 @@ pub enum Error {
 
     #[error("MissingGrid: {0}")]
     MissingGrid(String),
+
+    #[error("Invalid: {0}")]
+    Invalid(String),
 }
 pub type Result<T> = std::result::Result<T, Error>;
