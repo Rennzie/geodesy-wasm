@@ -1,55 +1,14 @@
-use crate::error::{Error, WasmResult};
-
 use super::operators::ACCESSORY_OPERATORS;
-use geodesy_rs::{authoring::*, Error as RgError, Ntv2Grid};
-use js_sys::{DataView, Uint8Array};
+use geodesy_rs::{authoring::*, Error as RgError};
 use once_cell::sync::Lazy;
 use std::{
     collections::BTreeMap,
     sync::{Arc, Mutex},
 };
-use wasm_bindgen::prelude::*;
 
 // A single store on the heap for all grids
-static GRIDS: Lazy<Mutex<BTreeMap<String, Arc<dyn Grid>>>> =
+pub static GRIDS: Lazy<Mutex<BTreeMap<String, Arc<dyn Grid>>>> =
     Lazy::new(|| Mutex::new(BTreeMap::<String, Arc<dyn Grid>>::new()));
-
-/// Register grids for use in the [Geo] class.
-/// Grids MUST be registered before the [Geo] class is constructed.
-/// NOTE: This is a limitation of the current implementation.
-///
-/// The keys used to load the grid MUST be the same
-/// as the grid=<key> parameter in the definition string.
-///
-/// Supported Grid Types:
-///     - `NTv2` (.gsb)
-///     - `Gravsoft`
-#[wasm_bindgen(js_name = registerGrid)]
-pub fn register_grid(key: &str, data_view: Option<DataView>) -> WasmResult<()> {
-    // IDEA: To get more sophisticated we could
-    // -  fetch from the network by identifying if the name is http etc
-    //      -- either from the cdn or from a user defined url
-    // - from IndexDB at a key/database that we pre-define
-
-    if let Some(dv) = data_view {
-        let grid: Vec<u8> = Uint8Array::new(&dv.buffer()).to_vec();
-
-        let mut grids = GRIDS.lock().unwrap();
-
-        // TODO: Pull this into a separate function when we have more ways to get a grid
-        if key.trim().ends_with("gsb") {
-            grids.insert(key.to_string(), Arc::new(Ntv2Grid::new(&grid)?));
-        } else {
-            grids.insert(key.to_string(), Arc::new(BaseGrid::gravsoft(&grid)?));
-        }
-    } else {
-        Err(Error::MissingGrid(
-            format!("Did you forget to call register_grid for {:?}", key).to_string(),
-        ))?
-    }
-
-    Ok(())
-}
 
 // ----- T H E   W A S M  C T X   P R O V I D E R ---------------------------------
 #[derive(Debug, Default)]
