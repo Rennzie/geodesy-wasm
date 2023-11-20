@@ -1,45 +1,48 @@
-use super::{coordinate::CoordBuffer, grid::GridLoader, wasmcontext::WasmContext};
-use crate::error::WasmResult;
-use geodesy_rs::{authoring::parse_proj, prelude::*};
+use super::{
+    coordinate::CoordBuffer,
+    wasmcontext::{WasmContext, GRIDS},
+};
+use crate::error::{Error, WasmResult};
+use geodesy_rs::{
+    authoring::{parse_proj, BaseGrid},
+    prelude::*,
+    Ntv2Grid,
+};
+use js_sys::{DataView, Uint8Array};
+use std::sync::Arc;
 use wasm_bindgen::prelude::*;
 
-/// A wrapper around a Geodesy Context
+/// A wrapper around a [geodesy_rs::Context]
 /// This is the main entry point for the library.
 #[wasm_bindgen]
 pub struct Geo {
     context: WasmContext,
-    op_handle: OpHandle,
+    definition: String,
+    op_handle: Option<OpHandle>,
 }
 
 #[wasm_bindgen]
 impl Geo {
     #[wasm_bindgen(constructor)]
-    pub fn new(definition: &str, grids: Option<GridLoader>) -> WasmResult<Geo> {
-        let mut context = WasmContext::new();
-
+    pub fn new(definition: &str) -> WasmResult<Geo> {
         let mut geodesy_def = definition.to_owned();
         if definition.contains("+proj=") {
             geodesy_def = parse_proj(definition)?;
         }
 
-        if let Some(grids) = grids {
-            for (grid_key, grid_blob) in grids.into_iter() {
-                context.set_grid(grid_key.as_str(), grid_blob)?;
-            }
-        }
-
-        // Missing grids will error out here
-        let op_handle = context.op(geodesy_def.as_str());
-        match op_handle {
-            Ok(op_handle) => Ok(Self { context, op_handle }),
-            Err(e) => Err(JsError::new(&format!("{}", e))),
-        }
+        Ok(Self {
+            context: WasmContext::new(),
+            definition: geodesy_def.to_string(),
+            // We lazily initialize the op handle on first use
+            op_handle: None,
+        })
     }
 
     /// A forward transformation of the coordinates in the buffer.
     #[wasm_bindgen]
-    pub fn forward(&self, operands: &mut CoordBuffer) -> WasmResult<usize> {
-        let converted = self.context.apply(self.op_handle, Fwd, &mut operands.0);
+    pub fn forward(&mut self, operands: &mut CoordBuffer) -> WasmResult<usize> {
+        let handle = self.op_handle()?;
+        let converted = self.context.apply(handle, Fwd, &mut operands.0);
 
         match converted {
             Ok(c) => Ok(c),
@@ -49,8 +52,9 @@ impl Geo {
 
     /// An inverse transformation of the coordinates in the buffer.
     #[wasm_bindgen]
-    pub fn inverse(&self, operands: &mut CoordBuffer) -> WasmResult<usize> {
-        let converted = self.context.apply(self.op_handle, Inv, &mut operands.0);
+    pub fn inverse(&mut self, operands: &mut CoordBuffer) -> WasmResult<usize> {
+        let handle = self.op_handle()?;
+        let converted = self.context.apply(handle, Inv, &mut operands.0);
 
         match converted {
             Ok(c) => Ok(c),
@@ -60,13 +64,66 @@ impl Geo {
 
     /// A convenience method for testing that a forward and inverse transformation
     #[wasm_bindgen(js_name = roundTrip)]
-    pub fn round_trip(&self, operands: &mut CoordBuffer) -> WasmResult<usize> {
-        let fwd_count = self.context.apply(self.op_handle, Fwd, &mut operands.0);
-        let _inv_count = self.context.apply(self.op_handle, Inv, &mut operands.0);
+    pub fn round_trip(&mut self, operands: &mut CoordBuffer) -> WasmResult<usize> {
+        let handle = self.op_handle()?;
+        let fwd_count = self.context.apply(handle, Fwd, &mut operands.0);
+        let inv_count = self.context.apply(handle, Inv, &mut operands.0);
 
-        match fwd_count {
-            Ok(c) => Ok(c),
-            Err(e) => Err(JsError::new(&format!("{}", e))),
+        match (fwd_count, inv_count) {
+            (Ok(fc), Ok(ic)) => {
+                if fc != ic {
+                    return Err(JsError::new(&format!(
+                        "Forward and Inverse counts do not match: {} != {}",
+                        fc, ic
+                    )));
+                }
+                Ok(fc)
+            }
+            (Err(fe), _) => Err(JsError::new(&format!("{}", fe))),
+            (_, Err(ie)) => Err(JsError::new(&format!("{}", ie))),
         }
+    }
+
+    // For lazy initialization of the op handle
+    // Primarily so we can load grids after the context is created
+    fn op_handle(&mut self) -> Result<OpHandle, Error> {
+        match self.op_handle {
+            Some(op_handle) => Ok(op_handle),
+            None => {
+                let op_handle = self.context.op(self.definition.as_str())?;
+                self.op_handle = Some(op_handle);
+                Ok(op_handle)
+            }
+        }
+    }
+
+    /// Register grids for use in the [Geo] class.
+    ///
+    /// The keys used to load the grid MUST be the same
+    /// as the `grids=<key>` parameter in the definition string.
+    ///
+    /// Supported Grid Types:
+    ///     - `NTv2` (.gsb)
+    ///     - `Gravsoft`
+    #[wasm_bindgen(js_name = registerGrid)]
+    pub fn register_grid(&self, key: &str, data_view: DataView) -> WasmResult<()> {
+        // IDEA: To get more sophisticated we could
+        // -  fetch from the network by identifying if the name is http etc
+        //      -- either from the cdn or from a user defined url
+        // - from IndexDB at a key/database that we pre-define
+
+        let grid: Vec<u8> = Uint8Array::new(&data_view.buffer()).to_vec();
+
+        let mut grids = GRIDS.lock().unwrap();
+
+        // TODO: Pull this into a separate function when we have more ways to get a grid
+        if key.trim().ends_with("gsb") {
+            grids.insert(key.to_string(), Arc::new(Ntv2Grid::new(&grid)?));
+            return Ok(());
+        } else {
+            grids.insert(key.to_string(), Arc::new(BaseGrid::gravsoft(&grid)?));
+        }
+
+        Ok(())
     }
 }

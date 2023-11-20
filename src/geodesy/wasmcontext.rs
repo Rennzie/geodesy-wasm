@@ -1,13 +1,16 @@
 use super::operators::ACCESSORY_OPERATORS;
-use crate::error::Result as GWResult;
 use geodesy_rs::{authoring::*, Error as RgError};
-use std::{collections::BTreeMap, sync::Arc};
+use once_cell::sync::Lazy;
+use std::{
+    collections::BTreeMap,
+    sync::{Arc, Mutex},
+};
+
+// A single store on the heap for all grids
+pub static GRIDS: Lazy<Mutex<BTreeMap<String, Arc<dyn Grid + Send + Sync>>>> =
+    Lazy::new(|| Mutex::new(BTreeMap::<String, Arc<dyn Grid + Send + Sync>>::new()));
 
 // ----- T H E   W A S M  C T X   P R O V I D E R ---------------------------------
-// Modified from Rust Geodesy Minimal context to work with web inputs.
-// Changes:
-//      - Add blobs via `set_blob` instead of `get_blob` fetching directly from the file system
-
 #[derive(Debug, Default)]
 pub struct WasmContext {
     /// Constructors for user defined operators
@@ -16,19 +19,9 @@ pub struct WasmContext {
     resources: BTreeMap<String, String>,
     /// Instantiations of operators
     operators: BTreeMap<OpHandle, Op>,
-    /// Single Grid store for use by operators
-    grids: BTreeMap<String, Arc<dyn Grid>>,
 }
 
 const BAD_ID_MESSAGE: RgError = RgError::General("WasmContext: Unknown operator id");
-
-impl WasmContext {
-    pub fn set_grid(&mut self, key: &str, grid: Arc<dyn Grid>) -> GWResult<()> {
-        self.grids.insert(key.to_string(), grid);
-
-        Ok(())
-    }
-}
 
 impl Context for WasmContext {
     fn new() -> WasmContext {
@@ -128,7 +121,7 @@ impl Context for WasmContext {
 
     /// Access grid resources by identifier
     fn get_grid(&self, name: &str) -> Result<Arc<(dyn Grid + 'static)>, RgError> {
-        if let Some(grid) = self.grids.get(name) {
+        if let Some(grid) = GRIDS.lock().unwrap().get(name) {
             // It's a reference clone
             return Ok(grid.clone());
         }
