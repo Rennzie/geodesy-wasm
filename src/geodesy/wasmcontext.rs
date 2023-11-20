@@ -7,8 +7,8 @@ use std::{
 };
 
 // A single store on the heap for all grids
-pub static GRIDS: Lazy<Mutex<BTreeMap<String, Arc<dyn Grid>>>> =
-    Lazy::new(|| Mutex::new(BTreeMap::<String, Arc<dyn Grid>>::new()));
+pub static GRIDS: Lazy<Mutex<BTreeMap<String, Arc<dyn Grid + Send + Sync>>>> =
+    Lazy::new(|| Mutex::new(BTreeMap::<String, Arc<dyn Grid + Send + Sync>>::new()));
 
 // ----- T H E   W A S M  C T X   P R O V I D E R ---------------------------------
 #[derive(Debug, Default)]
