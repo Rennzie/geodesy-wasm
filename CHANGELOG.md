@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Attribution for `OSTN15_NTv1_OSGBtoETRS.gsb` [#32](https://github.com/Rennzie/geodesy-wasm/issues/32)
+
 ### Changed
 
 - Grids are stored in globally allocated heap memory [#34](https://github.com/Rennzie/geodesy-wasm/issues/34)
