@@ -1,5 +1,5 @@
 use super::{
-    coordinate::CoordBuffer,
+    coordinate::Coordinates,
     wasmcontext::{WasmContext, GRIDS},
 };
 use crate::error::{Error, WasmResult};
@@ -40,9 +40,9 @@ impl Geo {
 
     /// A forward transformation of the coordinates in the buffer.
     #[wasm_bindgen]
-    pub fn forward(&mut self, operands: &mut CoordBuffer) -> WasmResult<usize> {
+    pub fn forward(&mut self, operands: &mut Coordinates) -> WasmResult<usize> {
         let handle = self.op_handle()?;
-        let converted = self.context.apply(handle, Fwd, &mut operands.0);
+        let converted = self.context.apply(handle, Fwd, operands);
 
         match converted {
             Ok(c) => Ok(c),
@@ -52,9 +52,9 @@ impl Geo {
 
     /// An inverse transformation of the coordinates in the buffer.
     #[wasm_bindgen]
-    pub fn inverse(&mut self, operands: &mut CoordBuffer) -> WasmResult<usize> {
+    pub fn inverse(&mut self, operands: &mut Coordinates) -> WasmResult<usize> {
         let handle = self.op_handle()?;
-        let converted = self.context.apply(handle, Inv, &mut operands.0);
+        let converted = self.context.apply(handle, Inv, operands);
 
         match converted {
             Ok(c) => Ok(c),
@@ -64,10 +64,10 @@ impl Geo {
 
     /// A convenience method for testing that a forward and inverse transformation
     #[wasm_bindgen(js_name = roundTrip)]
-    pub fn round_trip(&mut self, operands: &mut CoordBuffer) -> WasmResult<usize> {
+    pub fn round_trip(&mut self, operands: &mut Coordinates) -> WasmResult<usize> {
         let handle = self.op_handle()?;
-        let fwd_count = self.context.apply(handle, Fwd, &mut operands.0);
-        let inv_count = self.context.apply(handle, Inv, &mut operands.0);
+        let fwd_count = self.context.apply(handle, Fwd, operands);
+        let inv_count = self.context.apply(handle, Inv, operands);
 
         match (fwd_count, inv_count) {
             (Ok(fc), Ok(ic)) => {
