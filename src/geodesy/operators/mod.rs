@@ -1,8 +1,8 @@
-mod noop;
+mod senmerc;
 
 use geodesy_rs::authoring::*;
 
 #[rustfmt::skip]
-pub const ACCESSORY_OPERATORS: [(&str, OpConstructor); 0] = [
-  // ("unitconvert", OpConstructor(unitconvert::new)),
+pub const ACCESSORY_OPERATORS: [(&str, OpConstructor); 1] = [
+  ("senmerc", OpConstructor(senmerc::new)),
 ];
