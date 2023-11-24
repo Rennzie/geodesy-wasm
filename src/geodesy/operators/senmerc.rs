@@ -1,6 +1,5 @@
-/// No-op operator which is the same as the RG one.
-/// Unfortunately the RG one is not exported so I've re-created it here for internal use
-/// I assume this is for legacy PROJ reasons therefore in geodesy-wasm latlong is a no-op.
+/// An as yet undefined `Sensat Mercator` operator.
+/// Webmercator with a scaling applied to the z coordinate.
 use geodesy_rs::authoring::*;
 
 // ----- C O M M O N -------------------------------------------------------------------

@@ -25,7 +25,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Grids are stored in globally allocated heap memory [#34](https://github.com/Rennzie/geodesy-wasm/issues/34)
-- Lazily initialise the operator so grids can be registered after it's created
+- Lazily initialise the operator so grids can be registered after creation
+- Renamed `noop` operator to `senmerc` in anticipation of adding a Sensat Mercator operator
+
+### Removed
+
+- The `unitconvert` operator which was implemented upstream in [Geodesy:#80](https://github.com/busstoptaktik/geodesy/pull/80)
 
 ## [0.5.0] - 2023-11-17
 
