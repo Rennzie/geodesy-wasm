@@ -18,7 +18,7 @@ crate-type = ["cdylib", "rlib"]
 default = ["console_error_panic_hook", "console_log"]
 
 [dependencies]
-wasm-bindgen = "0.2.86"
+wasm-bindgen = "0.2.88"
 
 geodesy_rs = { package = "geodesy", git = "https://github.com/Rennzie/geodesy.git", rev = "499f17952fa21a49a0e6a0a3d4cd35ab17c1bd1f", version = "0.11.1", features = [
   "js",
