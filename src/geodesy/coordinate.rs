@@ -1,36 +1,35 @@
+use crate::error::WasmResult;
 use geodesy_rs::prelude::*;
 use wasm_bindgen::prelude::*;
 
+/// A flat array of 4D coordinates.
 #[wasm_bindgen]
-pub enum CoordDimension {
-    Two,
-    Three,
-}
-
-/// A wrapper around the `CoordSetBuffer` struct which allows for a
-/// mutable pointer to wasm memory.
-#[wasm_bindgen]
-pub struct CoordBuffer(#[wasm_bindgen(skip)] pub CoordSetBuffer);
+pub struct Coordinates(Vec<f64>);
 
 #[wasm_bindgen]
-impl CoordBuffer {
-    /// Creates a new [CoordBuffer] from a JS array of f64 values.
-    /// The array should be flat and contain either 2D or 3D coordinates.
-    /// Note: If you are providing angular coordinates, they MUST be in radians AND
-    /// it's assumed they are in the order (longitude, latitude, height) OR (easting, northing, height).
+impl Coordinates {
+    /// Creates [Coordinates] from a JS array of f64 values.
+    /// The array MUST be flat and contain sets of 4D coordinates
+    /// ordered (longitude, latitude, height, time) OR (easting, northing, height, time).
+    /// Angular coordinates are assumed to be in radians.
+    /// Returns a pointer to the array in wasm memory.
     #[wasm_bindgen(constructor)]
-    pub fn new(coord_buffer: Vec<f64>, dimension: CoordDimension) -> CoordBuffer {
-        CoordBuffer(CoordSetBuffer::new(coord_buffer, dimension))
+    pub fn new(buffer: Vec<f64>) -> WasmResult<Coordinates> {
+        if buffer.len() % 4 != 0 {
+            return Err(JsError::new("Buffer length must be a multiple of 4"));
+        }
+        Ok(Coordinates(buffer))
     }
 
-    /// Maps the buffer from wasm memory to a JS array
-    /// consuming the wasm memory on the way out.
-    /// i.e we don't need to call `free()` on the pointer.
+    /// Maps the raw buffer values to a [js_sys::Float64Array] and returns it,
+    /// Coordinates are ordered (longitude, latitude, height, time) OR (easting, northing, height, time).
+    /// Angular coordinates are in radians.
+    /// Note: the WASM memory is freed on the way out and therefore no longer usable after this call.
     #[wasm_bindgen(js_name = toArray)]
     pub fn into_array(self) -> js_sys::Float64Array {
-        let array = js_sys::Float64Array::new_with_length(self.0.buffer.len() as u32);
+        let array = js_sys::Float64Array::new_with_length(self.0.len() as u32);
 
-        for (i, v) in self.0.buffer.into_iter().enumerate() {
+        for (i, v) in self.0.into_iter().enumerate() {
             array.set_index(i as u32, v);
         }
 
@@ -38,63 +37,29 @@ impl CoordBuffer {
     }
 }
 
-/// A flat buffer of f64 values representing coordinates.
-/// Currently supports 2D and 3D coordinate dimensions.
-/// Note: If you are providing angular coordinates coordinates, they should be in radians.
-pub struct CoordSetBuffer {
-    pub buffer: Vec<f64>,
-    dimensions: CoordDimension,
-}
-
-impl CoordSetBuffer {
-    pub fn new(coord_buffer: Vec<f64>, dimensions: CoordDimension) -> CoordSetBuffer {
-        CoordSetBuffer {
-            buffer: coord_buffer,
-            dimensions,
-        }
-    }
-
-    pub fn with_2d(coord_buffer: Vec<f64>) -> CoordSetBuffer {
-        CoordSetBuffer {
-            buffer: coord_buffer,
-            dimensions: CoordDimension::Two,
-        }
-    }
-
-    pub fn with_3d(coord_buffer: Vec<f64>) -> CoordSetBuffer {
-        CoordSetBuffer {
-            buffer: coord_buffer,
-            dimensions: CoordDimension::Three,
-        }
-    }
-
-    pub fn dim(&self) -> usize {
-        match self.dimensions {
-            CoordDimension::Two => 2,
-            CoordDimension::Three => 3,
-        }
-    }
-}
-
-impl CoordinateSet for CoordSetBuffer {
+impl CoordinateSet for Coordinates {
     fn len(&self) -> usize {
-        self.buffer.len() / self.dim()
+        self.0.len() / 4
     }
 
     fn get_coord(&self, index: usize) -> Coor4D {
-        let start = index * self.dim();
+        let start = index * 4;
         let mut result = Coor4D::origin();
-        for i in 0..self.dim() {
-            result[i] = self.buffer[start + i];
+        for i in 0..4 {
+            result[i] = self.0[start + i];
         }
 
         result
     }
 
     fn set_coord(&mut self, index: usize, value: &Coor4D) {
-        let start = index * self.dim();
-        for i in 0..self.dim() {
-            self.buffer[start + i] = value.0[i];
+        let start = index * 4;
+        for i in 0..4 {
+            self.0[start + i] = value.0[i];
         }
     }
 }
+
+// ----- T E S T S ---------------------------------------------------------------------
+
+// Written in tests/coordinates.rs because of the wasm_bindgen_test macro

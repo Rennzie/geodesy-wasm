@@ -1,4 +1,4 @@
-import {GeodesyWasm, Geodesy} from '../../pkg/node/index';
+import {GeodesyWasm, Geodesy, CoordTuple3D} from '../../pkg/node/index';
 import {log, logCoordDiff, logCoordinates} from './utils';
 GeodesyWasm.set_panic_hook();
 GeodesyWasm.init_console_logger();
@@ -47,14 +47,14 @@ async function main() {
 
   // And some coordinates to test with.
   // We'll us projected coordinates from central Cambridge in easting northing height order.
-  const centralCambridgeCoords = [
+  const centralCambridgeCoords: CoordTuple3D[] = [
     [544748.5367636156, 258372.49178149243, 9.61],
     [544750.8907704452, 258365.94195330486, 9.61],
   ];
 
   // And so we can validate the transforms, here is the result of doing the same transform
   // with PROJ
-  const expected = [
+  const expected: CoordTuple3D[] = [
     [13004.3086, 6837202.7637, 9.61],
     [13007.8289, 6837191.9623, 9.61],
   ];
