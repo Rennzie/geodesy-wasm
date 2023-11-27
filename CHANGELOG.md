@@ -21,16 +21,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Attribution for `OSTN15_NTv1_OSGBtoETRS.gsb` [#32](https://github.com/Rennzie/geodesy-wasm/issues/32)
+- Support for 2D, 3D and 4D coordinates as tuples ([number, number]) or objects ({x, y, z, t}) to the wrapper
 
 ### Changed
 
 - Grids are stored in globally allocated heap memory [#34](https://github.com/Rennzie/geodesy-wasm/issues/34)
 - Lazily initialise the operator so grids can be registered after creation
 - Renamed `noop` operator to `senmerc` in anticipation of adding a Sensat Mercator operator
+- How Coordinates work [#19](https://github.com/Rennzie/geodesy-wasm/issues/19):
+  - Rename `CoordBuffer` to `Coordinates`
+  - Remove superfluous wrapping of the underlying buffer
+  - Removed the requirement for specifying the coordinate dimension - they are always 4D.
 
 ### Removed
 
-- The `unitconvert` operator which was implemented upstream in [Geodesy:#80](https://github.com/busstoptaktik/geodesy/pull/80)
+- The `unitconvert` and `longlat` operators which have been implemented upstream in [Geodesy:#80](https://github.com/busstoptaktik/geodesy/pull/80)
 
 ## [0.5.0] - 2023-11-17
 
