@@ -1,7 +1,7 @@
 import Benchmark from 'benchmark';
 const suite = new Benchmark.Suite();
 
-import {Geodesy} from '../../pkg/node/index';
+import {CoordTuple, Geodesy} from '../../pkg/node/index';
 import proj4 from 'proj4';
 
 const EPSG_27700 =
@@ -15,7 +15,7 @@ const stdPipelineDefinition = `
 const proj = proj4(EPSG_27700, 'EPSG:3857');
 const geodesy = new Geodesy(stdPipelineDefinition);
 
-const coords: number[][] = [];
+const coords: CoordTuple[] = [];
 
 const bounds = {
   min: {x: -103976.3, y: -16703.87},

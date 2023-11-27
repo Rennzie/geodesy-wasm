@@ -1,3 +1,4 @@
+import {CoordTuple} from '../../pkg/node/index';
 const reset = '\x1b[0m';
 
 export const log = {
@@ -20,7 +21,7 @@ export function colourString(num: number): [string, number] {
   }
 }
 
-export function logCoordinate(coord: number[]): void {
+export function logCoordinate(coord: CoordTuple): void {
   if (coord.length === 2) {
     console.log(coord[0].toFixed(4), coord[1].toFixed(4));
   } else {
@@ -28,16 +29,18 @@ export function logCoordinate(coord: number[]): void {
   }
 }
 
-export function logCoordinates(coords: number[][]): void {
+export function logCoordinates(coords: CoordTuple[]): void {
   for (let i = 0; i < coords.length; i += 1) {
     logCoordinate(coords[i]);
   }
 }
 
-export function logCoordDiff(coordsA: number[][], coordsB: number[][]) {
+export function logCoordDiff(coordsA: CoordTuple[], coordsB: CoordTuple[]) {
   for (let i = 0; i < coordsA.length; i += 1) {
     let x = colourString(coordsA[i][0] - coordsB[i][0]);
     let y = colourString(coordsA[i][1] - coordsB[i][1]);
+
+    // @ts-ignore
     let z = colourString(coordsA[i][2] - coordsB[i][2]);
 
     console.log(`${x[0]} ${x[0]} ${z[0]}`, x[1], y[1], z[1]);

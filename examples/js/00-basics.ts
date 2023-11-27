@@ -1,4 +1,9 @@
-import {GeodesyWasm, Geodesy} from '../../pkg/node/index';
+import {
+  GeodesyWasm,
+  Geodesy,
+  CoordTuple2D,
+  CoordTuple3D,
+} from '../../pkg/node/index';
 import {log, logCoordDiff, logCoordinates} from './utils';
 GeodesyWasm.set_panic_hook();
 GeodesyWasm.init_console_logger();
@@ -15,21 +20,22 @@ function main() {
 
   // First we create a context and by providing a transformation definition.
   // In this case a simple transformation between WGS84 and UTM zone 32.
+  // We'll be using angular values in degrees as input so we must include a unit convert in the definition.
   let ctx = new Geodesy('utm zone=32');
 
   // We'll need some coordinates to test with.
   // Geodesy-wasm can take both projected and geographic coordinates.
-  // Coordinates MUST be in geodesy/navigation is ordering convention - latitude before longitude.
+  // Coordinates MUST be in GIS ordering convention - latitude before longitude.
   // Or in the case of projected coordinates - easting before northing.
 
-  let cph = [59.0, 18.0];
-  let osl = [60.0, 10.0];
-  let sth = [59.0, 18.0];
-  let hel = [60.0, 25.0];
+  let cph: CoordTuple2D | CoordTuple3D = [59.0, 18.0];
+  let osl: CoordTuple2D | CoordTuple3D = [60.0, 10.0];
+  let sth: CoordTuple2D | CoordTuple3D = [59.0, 18.0];
+  let hel: CoordTuple2D | CoordTuple3D = [60.0, 25.0];
 
   // For speed and to ease the cost of transferring data between JS and WASM geodesy-wasm operates
   // on arrays of coordinates. So we need to wrap our coordinates in an array.
-  let nordics = [cph, osl, sth, hel];
+  let nordics: (CoordTuple2D | CoordTuple3D)[] = [cph, osl, sth, hel];
   log.blue('----- Basic Transform WGS84 to UTM Zone 32 and back -----');
   log.green('\nOriginal (Nordic Capitals WGS84):');
   logCoordinates(nordics);
@@ -37,7 +43,9 @@ function main() {
   // We're using geographic coordinates that need to be converted to radians first.
   // I have plans to add a convenience function for this - https://github.com/Rennzie/geodesy-wasm/issues/19 -
   // but in the mean time it must be handled manually by the user.
-  nordics = nordics.map(c => c.map(c => (c * Math.PI) / 180.0));
+  nordics = nordics.map(c =>
+    c.map(c => (c * Math.PI) / 180.0),
+  ) as CoordTuple2D[];
 
   // NOTE: geodesy-wasm supports both 2D and 3D coordinates but not in the same transformation.
   // But it's not possible to mix 2D and 3D coordinates in the same transformation.
@@ -59,7 +67,9 @@ function main() {
     'The result is also in radians and need converting back to degrees:',
   );
   log.blue('Reverse DEG:');
-  logCoordinates(reverse.map(c => c.map(c => (c * 180.0) / Math.PI)));
+  logCoordinates(
+    reverse.map(c => c.map(c => (c * 180.0) / Math.PI)) as CoordTuple2D[],
+  );
 
   // For convenience and testing there is a round trip method.
   // It returns the difference between the original and the round trip result.
@@ -86,8 +96,15 @@ function main() {
   // coordinates to cartesian, and back. Hence, we need a pipeline
   // of 3 steps:
 
-  const pipeline =
+  let pipeline =
     'cart ellps=intl | helmert x=-87 y=-96 z=-120 | cart inv=true ellps=GRS80';
+
+  // Pipelines are first class citizen in Rust Geodesy which is great. It allows
+  // us to avoid the manual conversions to radians and back again.
+  // We'll do this by updating our pipeline with a `unitconvert` step.
+
+  pipeline =
+    'unitconvert xy_in=deg | cart ellps=intl | helmert x=-87 y=-96 z=-120 | cart inv=true ellps=GRS80 | unitconvert xy_out=deg';
 
   ctx = new Geodesy(pipeline);
 
@@ -96,27 +113,15 @@ function main() {
   osl = [60.0, 10.0, 10];
   sth = [59.0, 18.0, 10];
   hel = [60.0, 25.0, 10];
+  nordics = [cph, osl, sth, hel];
 
   log.green('\nOriginal (Nordic Capitals WGS84):');
   logCoordinates([cph, osl, sth, hel]);
 
-  // And converted again to radians
-  // Be Careful not to convert the Z value from degrees to radians
-  nordics = [cph, osl, sth, hel].map(c =>
-    c.map((c, i) => {
-      if (i < 2) return (c * Math.PI) / 180.0;
-      return c;
-    }),
-  );
-
   // Since the forward transformation goes *from* ed50 to wgs84, we use
   // the inverse method to take us the other way, back in time to ED50
-  const nordicsEd30Rg = ctx.inverse(nordics).map(c =>
-    c.map((c, i) => {
-      if (i < 2) return (c * 180.0) / Math.PI;
-      return c;
-    }),
-  );
+  const nordicsEd30Rg = ctx.inverse(nordics);
+
   log.green('Inverse to get (Nordic Capitals ED50):');
   logCoordinates(nordicsEd30Rg);
 
@@ -128,21 +133,19 @@ function main() {
   // There are caveats and limitations but for the most part it works well.
   // For our pipeline above we can use the equivalent PROJ string below:
 
-  const projPipeline = `
+  pipeline = `
       +proj=pipeline
+        +step +proj=unitconvert +xy_in=deg
         +step +proj=cart +ellps=intl
         +step +proj=helmert +x=-87 +y=-96 +z=-120
-        +step +proj=cart +inv=true +ellps=GRS80`;
+        +step +proj=cart +inv=true +ellps=GRS80
+        +step +proj=unitconvert +xy_out=deg
+        `;
 
-  ctx = new Geodesy(projPipeline);
+  ctx = new Geodesy(pipeline);
 
   // And we can use the same nordics coordinates as before.
-  const nordicsEd30Proj = ctx.inverse(nordics).map(c =>
-    c.map((c, i) => {
-      if (i < 2) return (c * 180.0) / Math.PI;
-      return c;
-    }),
-  );
+  const nordicsEd30Proj = ctx.inverse(nordics);
 
   log.green('\nDiff PROJ string vs Rust Geodesy String:');
   logCoordDiff(nordicsEd30Rg, nordicsEd30Proj);
