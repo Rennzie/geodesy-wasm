@@ -1,15 +1,6 @@
-use super::{
-    coordinate::Coordinates,
-    wasmcontext::{WasmContext, GRIDS},
-};
+use super::{coordinate::Coordinates, wasmcontext::WasmContext};
 use crate::error::{Error, WasmResult};
-use geodesy_rs::{
-    authoring::{parse_proj, BaseGrid},
-    prelude::*,
-    Ntv2Grid,
-};
-use js_sys::{DataView, Uint8Array};
-use std::sync::Arc;
+use geodesy_rs::{authoring::*, parse_proj, OpHandle};
 use wasm_bindgen::prelude::*;
 
 /// A wrapper around a [geodesy_rs::Context]
@@ -95,35 +86,5 @@ impl Geo {
                 Ok(op_handle)
             }
         }
-    }
-
-    /// Register grids for use in the [Geo] class.
-    ///
-    /// The keys used to load the grid MUST be the same
-    /// as the `grids=<key>` parameter in the definition string.
-    ///
-    /// Supported Grid Types:
-    ///     - `NTv2` (.gsb)
-    ///     - `Gravsoft`
-    #[wasm_bindgen(js_name = registerGrid)]
-    pub fn register_grid(&self, key: &str, data_view: DataView) -> WasmResult<()> {
-        // IDEA: To get more sophisticated we could
-        // -  fetch from the network by identifying if the name is http etc
-        //      -- either from the cdn or from a user defined url
-        // - from IndexDB at a key/database that we pre-define
-
-        let grid: Vec<u8> = Uint8Array::new(&data_view.buffer()).to_vec();
-
-        let mut grids = GRIDS.lock().unwrap();
-
-        // TODO: Pull this into a separate function when we have more ways to get a grid
-        if key.trim().ends_with("gsb") {
-            grids.insert(key.to_string(), Arc::new(Ntv2Grid::new(&grid)?));
-            return Ok(());
-        } else {
-            grids.insert(key.to_string(), Arc::new(BaseGrid::gravsoft(&grid)?));
-        }
-
-        Ok(())
     }
 }

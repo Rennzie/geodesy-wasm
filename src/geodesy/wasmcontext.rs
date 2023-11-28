@@ -1,14 +1,6 @@
-use super::operators::ACCESSORY_OPERATORS;
+use super::{grids::GRIDS, operators::ACCESSORY_OPERATORS};
 use geodesy_rs::{authoring::*, Error as RgError};
-use once_cell::sync::Lazy;
-use std::{
-    collections::BTreeMap,
-    sync::{Arc, Mutex},
-};
-
-// A single store on the heap for all grids
-pub static GRIDS: Lazy<Mutex<BTreeMap<String, Arc<dyn Grid>>>> =
-    Lazy::new(|| Mutex::new(BTreeMap::<String, Arc<dyn Grid>>::new()));
+use std::{collections::BTreeMap, sync::Arc};
 
 // ----- T H E   W A S M  C T X   P R O V I D E R ---------------------------------
 #[derive(Debug, Default)]
@@ -121,9 +113,11 @@ impl Context for WasmContext {
 
     /// Access grid resources by identifier
     fn get_grid(&self, name: &str) -> Result<Arc<(dyn Grid + 'static)>, RgError> {
-        if let Some(grid) = GRIDS.lock().unwrap().get(name) {
-            // It's a reference clone
-            return Ok(grid.clone());
+        if let Some(grids) = GRIDS.get() {
+            if let Some(grid) = grids.lock().unwrap().get(name) {
+                // It's a reference clone
+                return Ok(grid.clone());
+            }
         }
 
         Err(RgError::NotFound(
