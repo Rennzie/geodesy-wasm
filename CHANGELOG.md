@@ -22,11 +22,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Attribution for `OSTN15_NTv1_OSGBtoETRS.gsb` [#32](https://github.com/Rennzie/geodesy-wasm/issues/32)
 - Support for 2D, 3D and 4D coordinates as tuples ([number, number]) or objects ({x, y, z, t}) to the wrapper
+- Unstable support for loading a grid from the network
+- Support for the `axisswap` operator via [Geodesy:#84](https://github.com/busstoptaktik/geodesy/pull/84)
 
 ### Changed
 
 - Grids are stored in globally allocated heap memory [#34](https://github.com/Rennzie/geodesy-wasm/issues/34)
 - Lazily initialise the operator so grids can be registered after creation
+- Grids are loaded via standalone helper functions [#39](https://github.com/Rennzie/geodesy-wasm/issues/39)
 - Renamed `noop` operator to `senmerc` in anticipation of adding a Sensat Mercator operator
 - How Coordinates work [#19](https://github.com/Rennzie/geodesy-wasm/issues/19):
   - Rename `CoordBuffer` to `Coordinates`

@@ -1,6 +1,7 @@
 [package]
 name = "geodesy-wasm"
 version = "0.5.0"
+rust-version = "1.70"
 keywords = ["geospatial", "geodesy", "cartography", "geography"]
 categories = ["science"]
 authors = ["Sean Rennie <sean.rennie@sensat.co.uk>"]
@@ -20,7 +21,7 @@ default = ["console_error_panic_hook", "console_log"]
 [dependencies]
 wasm-bindgen = "0.2.88"
 
-geodesy_rs = { package = "geodesy", git = "https://github.com/Rennzie/geodesy.git", rev = "499f17952fa21a49a0e6a0a3d4cd35ab17c1bd1f", version = "0.11.0", features = [
+geodesy_rs = { package = "geodesy", git = "https://github.com/Rennzie/geodesy.git", rev = "dd19f7f4ace656a04e009ca0133243cb49dc578c", version = "0.11.0", features = [
   "js",
 ] }
 
@@ -34,7 +35,8 @@ thiserror = "1.0.44"
 console_log = { version = "1.0.0", features = ["color"], optional = true }
 log = "0.4.19"
 float_eq = "1.0.1"
-once_cell = "1.18.0"
+wasm-bindgen-futures = "0.4.39"
+reqwest = "0.11.22"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.38"
