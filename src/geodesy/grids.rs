@@ -42,7 +42,7 @@ pub fn register_grid_sync(key: &str, data_view: DataView) -> WasmResult<()> {
 ///     - `NTv2` (.gsb)
 ///     - `Gravsoft`
 #[wasm_bindgen(js_name = registerGrid)]
-pub async fn register_grid(key: &str, url: &str) -> WasmResult<()> {
+pub async fn UNSTABLE_register_grid(key: &str, url: &str) -> WasmResult<()> {
     // TODO: Cache the result on IndexDB if available.
     // - Make it possible to add headers when calling `register_grid`
 
