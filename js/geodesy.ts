@@ -1,8 +1,8 @@
-import * as GeodesyWasm from '@geodesy-wasm';
+import {Geo, registerGridSync} from '@geodesy-wasm';
 import {Coordinates as WasmCoordinates} from '@geodesy-wasm';
 
 export class Geodesy {
-  private ctx: GeodesyWasm.Geo;
+  private ctx: Geo;
 
   /**
    * The `Geodesy` class wraps the geodesy-wasm library and provides a simpler JS friendly interface that abstracts some of the wasmness out of it.
@@ -22,11 +22,11 @@ export class Geodesy {
    * ```
    */
   constructor(definition: string, gridMap?: Record<string, DataView>) {
-    this.ctx = new GeodesyWasm.Geo(tidyProjString(definition));
+    this.ctx = new Geo(tidyProjString(definition));
 
     if (gridMap) {
       for (const [key, value] of Object.entries(gridMap)) {
-        this.ctx.registerGrid(key, value);
+        registerGridSync(key, value);
       }
     }
     // TODO: How do we cleanup wasm memory if the class is GC'd?
