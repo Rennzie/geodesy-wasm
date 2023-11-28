@@ -21,7 +21,7 @@ default = ["console_error_panic_hook", "console_log"]
 [dependencies]
 wasm-bindgen = "0.2.88"
 
-geodesy_rs = { package = "geodesy", git = "https://github.com/Rennzie/geodesy.git", rev = "dd19f7f4ace656a04e009ca0133243cb49dc578c", version = "0.11.1", features = [
+geodesy_rs = { package = "geodesy", git = "https://github.com/Rennzie/geodesy.git", rev = "dd19f7f4ace656a04e009ca0133243cb49dc578c", version = "0.11.0", features = [
   "js",
 ] }
 
