@@ -8,23 +8,9 @@
 
 ## About
 
-Geodesy is a pure Rust library for doing coordinate transformations and conversion. Geodesy-Wasm is, as the name suggests, wasm bindings for Rust Geodesy. It is intended as an alternative to [Proj4.js](http://proj4js.org/) for performing coordinate transformations in the browser. Today there is no alternative to Proj4.js and while for many projects this isn't an issue - it becomes challenging if you require more advanced transformations that only PROJ offers - notably via the pipeline operator. Rust Geodesy has very similar pipeline support to PROJ - the differences are easily worked around.
+Geodesy is a pure Rust library for doing coordinate transformations and conversion. Geodesy-Wasm is, as the name suggests, wasm bindings for Rust Geodesy. It is intended as an alternative to [Proj4.js](http://proj4js.org/) for performing coordinate transformations in the browser. Today there is no alternative to Proj4.js and while for many projects this isn't an issue - it becomes challenging if you require more advanced transformations that only PROJ offers - notably via the pipeline operator. Rust Geodesy is built with pipelines as first class citizens and support to PROJ via the `parse_proj` helper function.
 
 _Note: Please see the [warnings](https://github.com/busstoptaktik/geodesy?tab=readme-ov-file#concrete) in the Geodesy create regarding stability and architectural goals. In short Geodesy isn't a replacement for PROJ and only contains a fraction of the projects. However you if only need a sub-set of what PROJ has to offer this project may be of interest._
-
-### Roadmap
-
-1. [x] Implement bindings to the geodesy library
-2. [x] Write a JS friendly wrapper around the bindings
-3. [x] Proj string to geodesy_rs parser so that proj strings can be used with geodesy_wasm - completed by @busstoptaktik in the geodesy crate
-4. [x] NTv2 support
-   1. Being added in the geodesy crate [here](https://github.com/busstoptaktik/geodesy/pull/60) but is already being used in geodesy-wasm in place of gravsoft grid support.
-5. [x] Usage guide and examples
-6. [x] Documentation
-7. [x] Add operators for better parity with PROJ
-   1. [x] unitconvert
-   2. [x] hgridshift
-   3. [x] longlat?
 
 Contributions very much welcome!
 
@@ -59,28 +45,6 @@ See [this notebook](https://observablehq.com/d/3ff9d9b8f0b5168a) for an example 
 
 ## 📚 Documentation
 
-### Operators
-
-Geodesy wasm provides some limited operators that are not on the Rust Geodesy road map. Mostly this will be to get closer to PROJ. The operators are:
-
-#### unitconvert
-
-Used for converting horizontal and vertical units. Note, time units are not supported. See units.rs for a list of supported units.
-
-```js
-import {Geodesy} from 'geodesy-wasm';
-let ctx = new Geodesy('unitconvert xy_in=deg xy_out=rad');
-let result = ctx.forward([[1, 2]]);
-console.log(result); // [0.017453292519943295, 0.03490658503988659]
-
-let reverse = ctx.reverse(result);
-console.log(reverse); // [1, 2]
-```
-
-#### longlat (and aliases [latlon, latlong, longlat])
-
-As far as I can tell the `longlat` operator is a no-op. My assumption is it's for historical reasons, so in geodesy-wasm it's just a noop.
-
 ## Development
 
 For convenience all scripts can be run with `bun <script>`. Make sure all the javascript related dependencies are installed with `bun install`. Rust dependencies are managed by [cargo](https://doc.rust-lang.org/cargo/) and don't require and explicit install step.
@@ -98,7 +62,7 @@ TARGET=node ENV=debug bun build
 
 The wrapper is intended to abstract some of the complexities of using a wasm library - like dealing with pointers and managing WASM memory. It's also written to provide a more familiar API for JS developers - see [examples](#📝-examples).
 
-**Note: This project uses [Bun](https://bun.sh/) for building and testing of the Javascript wrapper. Follow the instructions on the website to install it.**
+**Note: This project uses [Bun](https://bun.sh/) for building and testing of the Typescript wrapper.**
 
 To develop the wrapper you must first build the wasm bindings:
 
@@ -107,8 +71,6 @@ bun build:wrapper-dev
 ```
 
 This will ensure that you get all the linting goodness from typescript while making changes to the wrapper.
-
-Todo: tests etc
 
 ### 🔬 Testing
 
