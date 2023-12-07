@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for 2D, 3D and 4D coordinates as tuples ([number, number]) or objects ({x, y, z, t}) to the wrapper
 - Unstable support for loading a grid from the network
 - Support for the `axisswap` operator via [Geodesy:#84](https://github.com/busstoptaktik/geodesy/pull/84)
+- `senmerc` operator [#38](https://github.com/Rennzie/geodesy-wasm/issues/38)
 
 ### Changed
 
