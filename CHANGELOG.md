@@ -16,6 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- ## [Unreleased] -->
 
+## [0.7.0] - 2024-21-08
+
+### Changed
+
+- Bumped Geodesy crate to latest
+- Updated all deps to latest
+
 ## [0.6.0] - 2023-12-08
 
 ### Added

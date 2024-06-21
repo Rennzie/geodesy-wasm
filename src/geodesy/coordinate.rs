@@ -42,6 +42,10 @@ impl CoordinateSet for Coordinates {
         self.0.len() / 4
     }
 
+    fn dim(&self) -> usize {
+        4
+    }
+
     fn get_coord(&self, index: usize) -> Coor4D {
         let start = index * 4;
         let mut result = Coor4D::origin();

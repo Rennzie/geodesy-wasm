@@ -1,6 +1,6 @@
 use super::{coordinate::Coordinates, wasmcontext::WasmContext};
 use crate::error::{Error, WasmResult};
-use geodesy_rs::{authoring::*, parse_proj, OpHandle};
+use geodesy_rs::{authoring::*, ctx::OpHandle};
 use wasm_bindgen::prelude::*;
 
 /// A wrapper around a [geodesy_rs::Context]
