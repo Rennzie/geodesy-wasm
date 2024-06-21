@@ -1,6 +1,5 @@
 use crate::error::{Result, WasmResult};
-use geodesy_rs::Grid;
-use geodesy_rs::{authoring::BaseGrid, Ntv2Grid};
+use geodesy_rs::authoring::{BaseGrid, Grid, Ntv2Grid};
 use js_sys::{DataView, Uint8Array};
 use reqwest::Url;
 use std::{
