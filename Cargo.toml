@@ -31,7 +31,7 @@ geodesy_rs = { package = "geodesy", git = "https://github.com/Rennzie/geodesy.gi
 # code size when deploying.
 console_error_panic_hook = { version = "0.1.7", optional = true }
 js-sys = "0.3.69"
-thiserror = "1.0.61"
+thiserror = "2.0.8"
 console_log = { version = "1.0.0", features = ["color"], optional = true }
 log = "0.4.21"
 float_eq = "1.0.1"
