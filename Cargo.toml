@@ -36,7 +36,7 @@ console_log = { version = "1.0.0", features = ["color"], optional = true }
 log = "0.4.21"
 float_eq = "1.0.1"
 wasm-bindgen-futures = "0.4.42"
-reqwest = "0.12.5"
+reqwest = "0.13.1"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.42"
